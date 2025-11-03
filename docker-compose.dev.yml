@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # Development override for backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+    environment:
+      NODE_ENV: development
+
+  # Development override for frontend  
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
+    ports:
+      - "3002:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:18001
