@@ -43,7 +43,10 @@ graph TB
 
 ### System Components
 
-1. **Frontend Application**: React-based SPA for campaign management and analytics
+1. **Frontend Application**: React-based responsive SPA with mobile-first design
+   - CSS-in-JS styling with responsive breakpoints
+   - Progressive Web App (PWA) capabilities for mobile experience
+   - Touch-optimized components and gesture support
 2. **API Server**: Express.js REST API handling all business logic
 3. **URL Shortener**: Service for generating and resolving shortened URLs
 4. **Analytics Engine**: Component for processing clicks, conversions, and YouTube data
@@ -57,17 +60,49 @@ graph TB
 
 #### Campaign Management Interface
 - **CampaignList**: Displays all campaigns with search and filtering
+  - Mobile: Card-based layout with collapsible details
+  - Desktop: Table layout with inline actions
 - **CampaignForm**: Create/edit campaign details
+  - Mobile: Single-column form with large touch targets
+  - Desktop: Multi-column layout with enhanced validation
 - **CampaignDetails**: Shows campaign overview with link management
+  - Mobile: Tabbed interface for campaign info and links
+  - Desktop: Side-by-side layout with real-time updates
 - **LinkForm**: Add/edit campaign links with YouTube integration
+  - Mobile: Step-by-step wizard interface
+  - Desktop: Single-form layout with live preview
 - **YouTubePreview**: Displays video thumbnail, title, and view count
+  - Mobile: Full-width cards with touch-optimized controls
+  - Desktop: Grid layout with hover interactions
 
 #### Analytics Dashboard
 - **AnalyticsSummary**: Campaign-level metrics and KPIs
+  - Mobile: Vertical card stack with swipe navigation
+  - Desktop: Dashboard grid with customizable widgets
 - **LinkAnalytics**: Individual link performance with YouTube CTR
+  - Mobile: Expandable list items with drill-down details
+  - Desktop: Data table with sortable columns and filters
 - **ConversionFunnel**: Visual representation of conversion steps
+  - Mobile: Vertical funnel with touch-friendly interactions
+  - Desktop: Horizontal funnel with detailed tooltips
 - **RevenueAttribution**: Revenue tracking and attribution charts
+  - Mobile: Simplified charts with gesture controls
+  - Desktop: Interactive charts with advanced filtering
 - **DateRangePicker**: Filter analytics by time periods
+  - Mobile: Native date picker with preset ranges
+  - Desktop: Calendar widget with custom range selection
+
+#### Responsive Design System
+- **Breakpoints**: 
+  - Mobile: 320px - 768px
+  - Tablet: 769px - 1024px
+  - Desktop: 1025px+
+- **Touch Targets**: Minimum 44px for all interactive elements
+- **Typography**: Scalable font sizes using rem units
+- **Navigation**: 
+  - Mobile: Bottom tab bar or hamburger menu
+  - Desktop: Top navigation with sidebar
+- **Layout Grid**: CSS Grid and Flexbox for responsive layouts
 
 ### Backend API Endpoints
 
@@ -231,6 +266,65 @@ CREATE TABLE conversion_events (
 - **Authentication**: JWT token validation and expiration
 - **Rate Limiting**: Prevent abuse of URL shortening service
 - **Data Privacy**: Ensure proper handling of tracking data
+
+### Responsive Design Testing
+- **Cross-Device Testing**: Verify functionality across mobile, tablet, and desktop devices
+- **Browser Compatibility**: Test responsive layouts in Chrome, Firefox, Safari, and Edge
+- **Touch Interaction Testing**: Validate touch targets meet accessibility guidelines
+- **Orientation Testing**: Ensure layouts work in both portrait and landscape modes
+- **Performance Testing**: Measure load times and interaction responsiveness on mobile networks
+
+## Responsive Design Architecture
+
+### Mobile-First Approach
+The application follows a mobile-first design strategy, starting with mobile layouts and progressively enhancing for larger screens.
+
+### Responsive Breakpoints
+```css
+/* Mobile devices */
+@media (max-width: 768px) {
+  /* Touch-optimized layouts */
+}
+
+/* Tablet devices */
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Hybrid touch/mouse layouts */
+}
+
+/* Desktop devices */
+@media (min-width: 1025px) {
+  /* Mouse-optimized layouts */
+}
+```
+
+### Component Adaptation Strategies
+
+#### Navigation Patterns
+- **Mobile**: Bottom tab navigation or slide-out drawer
+- **Desktop**: Top horizontal navigation with dropdown menus
+- **Tablet**: Adaptive navigation based on orientation
+
+#### Data Visualization
+- **Mobile**: Simplified charts with essential metrics, swipe gestures for navigation
+- **Desktop**: Comprehensive dashboards with hover states and detailed tooltips
+- **Tablet**: Balanced approach with touch-friendly interactions
+
+#### Form Layouts
+- **Mobile**: Single-column forms with large input fields and touch-friendly buttons
+- **Desktop**: Multi-column layouts with inline validation and keyboard shortcuts
+- **Tablet**: Flexible layouts that adapt to orientation changes
+
+### Touch Interaction Design
+- **Minimum Touch Target Size**: 44px × 44px for all interactive elements
+- **Gesture Support**: Swipe navigation for mobile carousels and lists
+- **Haptic Feedback**: Subtle animations to confirm user interactions
+- **Accessibility**: High contrast ratios and screen reader compatibility
+
+### Performance Optimization for Mobile
+- **Lazy Loading**: Progressive loading of analytics charts and images
+- **Image Optimization**: Responsive images with appropriate sizes for device pixel density
+- **Bundle Splitting**: Code splitting to reduce initial load time on mobile networks
+- **Offline Support**: Service worker for basic functionality when offline
 
 ## Performance Considerations
 
