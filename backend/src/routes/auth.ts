@@ -5,6 +5,7 @@ import { asyncHandler } from '../middleware/errorHandler';
 import { authenticateToken } from '../middleware/auth';
 import { registerSchema, loginSchema, refreshTokenSchema } from '../schemas/auth';
 import { AuthenticatedRequest } from '../types';
+import { sendSuccess, sendError, CommonErrors, SuccessResponses } from '../utils/apiResponse';
 
 const router = Router();
 const authService = new AuthService();
@@ -13,8 +14,17 @@ const authService = new AuthService();
 router.post('/register', 
   validateRequest(registerSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const authResponse = await authService.register(req.body);
-    res.status(201).json(authResponse);
+    try {
+      const authResponse = await authService.register(req.body);
+      return SuccessResponses.CREATED(res, authResponse, 'User registered successfully');
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('already exists')) {
+          return sendError(res, CommonErrors.CONFLICT(error.message));
+        }
+      }
+      throw error; // Let the global error handler deal with it
+    }
   })
 );
 
@@ -22,8 +32,17 @@ router.post('/register',
 router.post('/login',
   validateRequest(loginSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const authResponse = await authService.login(req.body);
-    res.json(authResponse);
+    try {
+      const authResponse = await authService.login(req.body);
+      return SuccessResponses.OK(res, authResponse, 'Login successful');
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid email or password')) {
+          return sendError(res, CommonErrors.UNAUTHORIZED('Invalid email or password'));
+        }
+      }
+      throw error; // Let the global error handler deal with it
+    }
   })
 );
 
@@ -31,9 +50,18 @@ router.post('/login',
 router.post('/refresh',
   validateRequest(refreshTokenSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { token } = req.body;
-    const newToken = await authService.refreshToken(token);
-    res.json({ token: newToken });
+    try {
+      const { token } = req.body;
+      const newToken = await authService.refreshToken(token);
+      return SuccessResponses.OK(res, { token: newToken }, 'Token refreshed successfully');
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid or expired token') || error.message.includes('User not found')) {
+          return sendError(res, CommonErrors.UNAUTHORIZED(error.message));
+        }
+      }
+      throw error; // Let the global error handler deal with it
+    }
   })
 );
 
@@ -41,7 +69,7 @@ router.post('/refresh',
 router.get('/profile',
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    res.json({ user: req.user });
+    return SuccessResponses.OK(res, { user: req.user }, 'Profile retrieved successfully');
   })
 );
 

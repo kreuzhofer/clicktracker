@@ -3,6 +3,7 @@ import { validateRequest } from '../middleware/validation';
 import { asyncHandler } from '../middleware/errorHandler';
 import { AuthenticatedRequest } from '../types';
 import { URLShortenerService } from '../services/URLShortenerService';
+import { sendSuccess, sendError, CommonErrors, SuccessResponses } from '../utils/apiResponse';
 import Joi from 'joi';
 
 const router = Router();
@@ -79,22 +80,13 @@ router.post('/shorten',
         customAlias
       });
 
-      res.status(201).json({
-        success: true,
-        data: result
-      });
+      return SuccessResponses.CREATED(res, result, 'Short URL created successfully');
     } catch (error) {
       if (error instanceof Error) {
         if (error.message === 'Custom alias is already taken') {
-          res.status(409).json({
-            error: 'Conflict',
-            message: error.message
-          });
+          return sendError(res, CommonErrors.CONFLICT(error.message));
         } else if (error.message.includes('Unable to generate unique short code')) {
-          res.status(500).json({
-            error: 'Internal Server Error',
-            message: 'Unable to generate unique short code. Please try again.'
-          });
+          return sendError(res, CommonErrors.INTERNAL_ERROR('Unable to generate unique short code. Please try again.'));
         } else {
           throw error; // Let the error handler deal with it
         }
@@ -113,14 +105,11 @@ router.post('/validate-url',
 
     const isValid = urlShortenerService.validateUrl(url);
 
-    res.json({
-      success: true,
-      data: {
-        url,
-        isValid,
-        message: isValid ? 'URL is valid' : 'URL format is invalid'
-      }
-    });
+    return SuccessResponses.OK(res, {
+      url,
+      isValid,
+      message: isValid ? 'URL is valid' : 'URL format is invalid'
+    }, 'URL validation completed');
   })
 );
 
@@ -135,19 +124,13 @@ router.post('/extract-video-id',
     if (videoId) {
       const isValidId = urlShortenerService.validateYouTubeVideoId(videoId);
       
-      res.json({
-        success: true,
-        data: {
-          url,
-          videoId,
-          isValid: isValidId
-        }
-      });
+      return SuccessResponses.OK(res, {
+        url,
+        videoId,
+        isValid: isValidId
+      }, 'YouTube video ID extracted successfully');
     } else {
-      res.status(400).json({
-        error: 'Bad Request',
-        message: 'Unable to extract YouTube video ID from the provided URL'
-      });
+      return sendError(res, CommonErrors.VALIDATION_ERROR('Unable to extract YouTube video ID from the provided URL'));
     }
   })
 );
@@ -160,28 +143,18 @@ router.get('/stats/:campaignLinkId',
     // Validate UUID format
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidPattern.test(campaignLinkId)) {
-      res.status(400).json({
-        error: 'Bad Request',
-        message: 'Invalid campaign link ID format'
-      });
-      return;
+      return sendError(res, CommonErrors.VALIDATION_ERROR('Invalid campaign link ID format'));
     }
 
     try {
       const stats = await urlShortenerService.getClickStats(campaignLinkId);
 
-      res.json({
-        success: true,
-        data: {
-          campaignLinkId,
-          ...stats
-        }
-      });
+      return SuccessResponses.OK(res, {
+        campaignLinkId,
+        ...stats
+      }, 'Click statistics retrieved successfully');
     } catch (error) {
-      res.status(404).json({
-        error: 'Not Found',
-        message: 'Campaign link not found'
-      });
+      return sendError(res, CommonErrors.NOT_FOUND('Campaign link'));
     }
   })
 );
@@ -192,19 +165,11 @@ router.post('/batch-clicks',
     const { clicks } = req.body;
 
     if (!Array.isArray(clicks) || clicks.length === 0) {
-      res.status(400).json({
-        error: 'Bad Request',
-        message: 'Clicks array is required and must not be empty'
-      });
-      return;
+      return sendError(res, CommonErrors.VALIDATION_ERROR('Clicks array is required and must not be empty'));
     }
 
     if (clicks.length > 1000) {
-      res.status(400).json({
-        error: 'Bad Request',
-        message: 'Maximum 1000 clicks allowed per batch'
-      });
-      return;
+      return sendError(res, CommonErrors.VALIDATION_ERROR('Maximum 1000 clicks allowed per batch'));
     }
 
     const startTime = Date.now();
@@ -214,21 +179,18 @@ router.post('/batch-clicks',
     const successCount = results.filter(result => !(result instanceof Error)).length;
     const errorCount = results.length - successCount;
 
-    res.json({
-      success: true,
-      data: {
-        totalClicks: results.length,
-        successfulClicks: successCount,
-        failedClicks: errorCount,
-        processingTimeMs: processingTime,
-        averageTimePerClick: processingTime / results.length,
-        results: results.map((result, index) => ({
-          index,
-          success: !(result instanceof Error),
-          data: result instanceof Error ? { error: result.message } : result
-        }))
-      }
-    });
+    return SuccessResponses.OK(res, {
+      totalClicks: results.length,
+      successfulClicks: successCount,
+      failedClicks: errorCount,
+      processingTimeMs: processingTime,
+      averageTimePerClick: processingTime / results.length,
+      results: results.map((result, index) => ({
+        index,
+        success: !(result instanceof Error),
+        data: result instanceof Error ? { error: result.message } : result
+      }))
+    }, 'Batch clicks processed successfully');
   })
 );
 
@@ -238,23 +200,16 @@ router.delete('/cleanup/:days',
     const days = parseInt(req.params.days);
 
     if (isNaN(days) || days < 1 || days > 365) {
-      res.status(400).json({
-        error: 'Bad Request',
-        message: 'Days must be a number between 1 and 365'
-      });
-      return;
+      return sendError(res, CommonErrors.VALIDATION_ERROR('Days must be a number between 1 and 365'));
     }
 
     const deletedCount = await urlShortenerService.cleanupOldClicks(days);
 
-    res.json({
-      success: true,
-      data: {
-        deletedEvents: deletedCount,
-        daysKept: days,
-        message: `Cleaned up ${deletedCount} click events older than ${days} days`
-      }
-    });
+    return SuccessResponses.OK(res, {
+      deletedEvents: deletedCount,
+      daysKept: days,
+      message: `Cleaned up ${deletedCount} click events older than ${days} days`
+    }, 'Cleanup completed successfully');
   })
 );
 

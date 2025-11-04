@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { sendError, CommonErrors } from '../utils/apiResponse';
 
 export interface AppError extends Error {
   statusCode?: number;
@@ -112,11 +113,15 @@ export const errorHandler = (
 };
 
 export const notFoundHandler = (req: Request, res: Response): void => {
-  res.status(404).json({
-    error: 'Endpoint not found',
-    path: req.path,
-    method: req.method,
-    timestamp: new Date().toISOString()
+  sendError(res, {
+    statusCode: 404,
+    error: 'ENDPOINT_NOT_FOUND',
+    message: 'Endpoint not found',
+    details: {
+      path: req.path,
+      method: req.method,
+      timestamp: new Date().toISOString()
+    }
   });
 };
 

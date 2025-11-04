@@ -5,6 +5,7 @@ import { YouTubeVideoStatsModel } from '../models/YouTubeVideoStats';
 import { CampaignLinkModel } from '../models/CampaignLink';
 import { validateRequest, validateParams } from '../middleware/validation';
 import { youtubeValidationSchema } from '../schemas/campaignLink';
+import { sendSuccess, sendError, CommonErrors, SuccessResponses } from '../utils/apiResponse';
 import Joi from 'joi';
 
 const router = express.Router();
@@ -66,24 +67,18 @@ router.post('/validate',
       const validation = youtubeService.validateYouTubeUrl(url);
       
       if (!validation.isValid) {
-        return res.status(400).json({
-          error: 'Invalid YouTube URL',
-          message: validation.error
-        });
+        return sendError(res, CommonErrors.VALIDATION_ERROR(validation.error || 'Invalid YouTube URL'));
       }
 
-      return res.json({
+      return SuccessResponses.OK(res, {
         isValid: true,
         videoId: validation.videoId,
         extractedUrl: url
-      });
+      }, 'YouTube URL validated successfully');
 
     } catch (error) {
       console.error('YouTube URL validation error:', error);
-      return res.status(500).json({
-        error: 'Internal server error',
-        message: 'Failed to validate YouTube URL'
-      });
+      return sendError(res, CommonErrors.INTERNAL_ERROR('Failed to validate YouTube URL'));
     }
   }
 );
@@ -101,35 +96,22 @@ router.get('/metadata/:videoId',
       const youtubeService = getYouTubeServiceSafe();
       const metadata = await youtubeService.getVideoMetadata(videoId);
       
-      return res.json({
-        success: true,
-        data: metadata
-      });
+      return SuccessResponses.OK(res, metadata, 'Video metadata retrieved successfully');
 
     } catch (error) {
       console.error('YouTube metadata fetch error:', error);
       
       if (error instanceof Error) {
         if (error.message.includes('Video not found')) {
-          return res.status(404).json({
-            error: 'Video not found',
-            message: `YouTube video ${req.params.videoId} does not exist or is not accessible`
-          });
+          return sendError(res, CommonErrors.NOT_FOUND(`YouTube video ${req.params.videoId}`));
         }
         
         if (error.message.includes('quota exceeded')) {
-          return res.status(429).json({
-            error: 'API quota exceeded',
-            message: 'YouTube API quota has been exceeded. Please try again later.',
-            retryAfter: 86400
-          });
+          return sendError(res, CommonErrors.RATE_LIMITED('YouTube API quota has been exceeded. Please try again later.'));
         }
       }
       
-      return res.status(500).json({
-        error: 'Internal server error',
-        message: 'Failed to fetch video metadata'
-      });
+      return sendError(res, CommonErrors.INTERNAL_ERROR('Failed to fetch video metadata'));
     }
   }
 );
@@ -147,28 +129,27 @@ router.post('/metadata/bulk',
       const youtubeService = getYouTubeServiceSafe();
       const metadata = await youtubeService.getBulkVideoMetadata(videoIds);
       
-      return res.json({
-        success: true,
-        data: metadata,
-        count: metadata.length,
-        requested: videoIds.length
+      return sendSuccess(res, metadata, {
+        message: 'Bulk video metadata retrieved successfully',
+        meta: {
+          count: metadata.length,
+          requested: videoIds.length
+        }
       });
 
     } catch (error) {
       console.error('YouTube bulk metadata fetch error:', error);
       
       if (error instanceof Error && error.message.includes('quota exceeded')) {
-        return res.status(429).json({
-          error: 'API quota exceeded',
+        return sendError(res, {
+          statusCode: 429,
+          error: 'RATE_LIMITED',
           message: 'YouTube API quota has been exceeded. Please try again later.',
-          retryAfter: 86400
+          details: { retryAfter: 86400 }
         });
       }
       
-      return res.status(500).json({
-        error: 'Internal server error',
-        message: 'Failed to fetch bulk video metadata'
-      });
+      return sendError(res, CommonErrors.INTERNAL_ERROR('Failed to fetch bulk video metadata'));
     }
   }
 );
@@ -186,37 +167,31 @@ router.get('/views/:videoId',
       const youtubeService = getYouTubeServiceSafe();
       const viewCount = await youtubeService.getVideoViewCount(videoId);
       
-      return res.json({
-        success: true,
+      return SuccessResponses.OK(res, {
         videoId,
         viewCount,
         fetchedAt: new Date().toISOString()
-      });
+      }, 'Video view count retrieved successfully');
 
     } catch (error) {
       console.error('YouTube view count fetch error:', error);
       
       if (error instanceof Error) {
         if (error.message.includes('Video not found')) {
-          return res.status(404).json({
-            error: 'Video not found',
-            message: `YouTube video ${req.params.videoId} does not exist or is not accessible`
-          });
+          return sendError(res, CommonErrors.NOT_FOUND(`YouTube video ${req.params.videoId}`));
         }
         
         if (error.message.includes('quota exceeded')) {
-          return res.status(429).json({
-            error: 'API quota exceeded',
+          return sendError(res, {
+            statusCode: 429,
+            error: 'RATE_LIMITED',
             message: 'YouTube API quota has been exceeded. Please try again later.',
-            retryAfter: 86400
+            details: { retryAfter: 86400 }
           });
         }
       }
       
-      return res.status(500).json({
-        error: 'Internal server error',
-        message: 'Failed to fetch video view count'
-      });
+      return sendError(res, CommonErrors.INTERNAL_ERROR('Failed to fetch video view count'));
     }
   }
 );
@@ -234,29 +209,28 @@ router.post('/views/bulk',
       const youtubeService = getYouTubeServiceSafe();
       const viewCounts = await youtubeService.getBulkVideoViewCounts(videoIds);
       
-      return res.json({
-        success: true,
-        data: viewCounts,
-        count: Object.keys(viewCounts).length,
-        requested: videoIds.length,
-        fetchedAt: new Date().toISOString()
+      return sendSuccess(res, viewCounts, {
+        message: 'Bulk video view counts retrieved successfully',
+        meta: {
+          count: Object.keys(viewCounts).length,
+          requested: videoIds.length,
+          fetchedAt: new Date().toISOString()
+        }
       });
 
     } catch (error) {
       console.error('YouTube bulk view count fetch error:', error);
       
       if (error instanceof Error && error.message.includes('quota exceeded')) {
-        return res.status(429).json({
-          error: 'API quota exceeded',
+        return sendError(res, {
+          statusCode: 429,
+          error: 'RATE_LIMITED',
           message: 'YouTube API quota has been exceeded. Please try again later.',
-          retryAfter: 86400
+          details: { retryAfter: 86400 }
         });
       }
       
-      return res.status(500).json({
-        error: 'Internal server error',
-        message: 'Failed to fetch bulk view counts'
-      });
+      return sendError(res, CommonErrors.INTERNAL_ERROR('Failed to fetch bulk view counts'));
     }
   }
 );
@@ -270,28 +244,20 @@ router.post('/refresh-views', async (req, res) => {
     const cronService = getCronServiceSafe();
     const result = await cronService.triggerUpdate();
     
-    return res.json({
-      success: result.success,
-      message: result.success ? 'View counts updated successfully' : 'View count update completed with errors',
+    return SuccessResponses.OK(res, {
       updatedCount: result.updatedCount,
       errors: result.errors,
       timestamp: new Date().toISOString()
-    });
+    }, result.success ? 'View counts updated successfully' : 'View count update completed with errors');
 
   } catch (error) {
     console.error('Manual view count refresh error:', error);
     
     if (error instanceof Error && error.message.includes('already in progress')) {
-      return res.status(409).json({
-        error: 'Update in progress',
-        message: 'A view count update is already in progress. Please wait for it to complete.'
-      });
+      return sendError(res, CommonErrors.CONFLICT('A view count update is already in progress. Please wait for it to complete.'));
     }
     
-    return res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to trigger view count refresh'
-    });
+    return sendError(res, CommonErrors.INTERNAL_ERROR('Failed to trigger view count refresh'));
   }
 });
 
@@ -308,29 +274,21 @@ router.post('/refresh-views/specific',
       const cronService = getCronServiceSafe();
       const result = await cronService.updateSpecificVideos(videoIds);
       
-      return res.json({
-        success: result.success,
-        message: result.success ? 'Specific video view counts updated successfully' : 'View count update completed with errors',
+      return SuccessResponses.OK(res, {
         updatedCount: result.updatedCount,
         errors: result.errors,
         videoIds,
         timestamp: new Date().toISOString()
-      });
+      }, result.success ? 'Specific video view counts updated successfully' : 'View count update completed with errors');
 
     } catch (error) {
       console.error('Specific view count refresh error:', error);
       
       if (error instanceof Error && error.message.includes('already in progress')) {
-        return res.status(409).json({
-          error: 'Update in progress',
-          message: 'A view count update is already in progress. Please wait for it to complete.'
-        });
+        return sendError(res, CommonErrors.CONFLICT('A view count update is already in progress. Please wait for it to complete.'));
       }
       
-      return res.status(500).json({
-        error: 'Internal server error',
-        message: 'Failed to refresh specific video view counts'
-      });
+      return sendError(res, CommonErrors.INTERNAL_ERROR('Failed to refresh specific video view counts'));
     }
   }
 );
@@ -343,18 +301,14 @@ router.get('/stats', async (req, res) => {
   try {
     const stats = await videoStatsModel.findAll();
     
-    return res.json({
-      success: true,
-      data: stats,
-      count: stats.length
+    return sendSuccess(res, stats, {
+      message: 'Video statistics retrieved successfully',
+      meta: { count: stats.length }
     });
 
   } catch (error) {
     console.error('Video stats fetch error:', error);
-    return res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to fetch video statistics'
-    });
+    return sendError(res, CommonErrors.INTERNAL_ERROR('Failed to fetch video statistics'));
   }
 });
 
@@ -371,23 +325,14 @@ router.get('/stats/:videoId',
       const stats = await videoStatsModel.findByVideoId(videoId);
       
       if (!stats) {
-        return res.status(404).json({
-          error: 'Stats not found',
-          message: `No statistics found for video ${videoId}`
-        });
+        return sendError(res, CommonErrors.NOT_FOUND(`Statistics for video ${videoId}`));
       }
       
-      return res.json({
-        success: true,
-        data: stats
-      });
+      return SuccessResponses.OK(res, stats, 'Video statistics retrieved successfully');
 
     } catch (error) {
       console.error('Video stats fetch error:', error);
-      return res.status(500).json({
-        error: 'Internal server error',
-        message: 'Failed to fetch video statistics'
-      });
+      return sendError(res, CommonErrors.INTERNAL_ERROR('Failed to fetch video statistics'));
     }
   }
 );
@@ -401,17 +346,11 @@ router.get('/cron/status', (req, res) => {
     const cronService = getCronServiceSafe();
     const status = cronService.getStatus();
     
-    return res.json({
-      success: true,
-      data: status
-    });
+    return SuccessResponses.OK(res, status, 'Cron job status retrieved successfully');
 
   } catch (error) {
     console.error('Cron status fetch error:', error);
-    return res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to fetch cron job status'
-    });
+    return sendError(res, CommonErrors.INTERNAL_ERROR('Failed to fetch cron job status'));
   }
 });
 
@@ -425,20 +364,22 @@ router.get('/health', async (req, res) => {
     const isHealthy = await youtubeService.healthCheck();
     const quotaInfo = youtubeService.getQuotaInfo();
     
-    return res.json({
-      success: true,
+    return SuccessResponses.OK(res, {
       healthy: isHealthy,
       quota: quotaInfo,
       timestamp: new Date().toISOString()
-    });
+    }, 'YouTube API health check completed');
 
   } catch (error) {
     console.error('YouTube health check error:', error);
-    return res.status(500).json({
-      success: false,
-      healthy: false,
-      error: 'Health check failed',
-      timestamp: new Date().toISOString()
+    return sendError(res, {
+      statusCode: 500,
+      error: 'HEALTH_CHECK_FAILED',
+      message: 'YouTube API health check failed',
+      details: {
+        healthy: false,
+        timestamp: new Date().toISOString()
+      }
     });
   }
 });
@@ -452,19 +393,14 @@ router.delete('/cleanup', async (req, res) => {
     const cronService = getCronServiceSafe();
     const result = await cronService.cleanupStaleStats();
     
-    return res.json({
-      success: true,
-      message: 'Stale statistics cleaned up successfully',
+    return SuccessResponses.OK(res, {
       deletedCount: result.deletedCount,
       timestamp: new Date().toISOString()
-    });
+    }, 'Stale statistics cleaned up successfully');
 
   } catch (error) {
     console.error('Cleanup error:', error);
-    return res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to clean up stale statistics'
-    });
+    return sendError(res, CommonErrors.INTERNAL_ERROR('Failed to clean up stale statistics'));
   }
 });
 

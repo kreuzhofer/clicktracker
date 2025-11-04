@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { validateRequest, validateParams } from '../middleware/validation';
 import { asyncHandler } from '../middleware/errorHandler';
 import { AuthenticatedRequest } from '../types';
+import { sendError, CommonErrors } from '../utils/apiResponse';
 import Joi from 'joi';
 
 const router = Router();
@@ -60,7 +61,7 @@ router.post('/',
   validateRequest(createConversionSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     // Implementation will be added when conversion service is available
-    res.status(501).json({ error: 'Not implemented yet' });
+    return sendError(res, CommonErrors.NOT_IMPLEMENTED('Conversion tracking not implemented yet'));
   })
 );
 
@@ -69,7 +70,7 @@ router.get('/attribution/:trackingId',
   validateParams(trackingIdParamsSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     // Implementation will be added when conversion service is available
-    res.status(501).json({ error: 'Not implemented yet' });
+    return sendError(res, CommonErrors.NOT_IMPLEMENTED('Attribution data not implemented yet'));
   })
 );
 

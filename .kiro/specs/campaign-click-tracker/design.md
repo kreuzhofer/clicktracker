@@ -243,23 +243,123 @@ CREATE TABLE conversion_events (
 - **Duplicate Aliases**: Check availability before creation
 - **Deleted Links**: Show user-friendly 404 page with campaign branding
 
+## API Design Standards
+
+### Response Format Consistency
+All API endpoints MUST follow a standardized response format to ensure predictable client-side handling:
+
+```javascript
+// Success Response Format
+{
+  "success": true,
+  "data": { /* actual response data */ },
+  "message": "Optional success message",
+  "meta": { /* pagination, counts, etc. */ }
+}
+
+// Error Response Format
+{
+  "success": false,
+  "error": "Error type/code",
+  "message": "Human-readable error message",
+  "details": { /* validation errors, etc. */ }
+}
+```
+
+### Authentication Standards
+- **JWT Tokens**: Use consistent token format with proper expiration
+- **Error Messages**: Standardize authentication error responses
+- **Token Refresh**: Implement consistent token refresh mechanism
+
+### Validation Standards
+- **Input Validation**: Use Joi schemas consistently across all endpoints
+- **Error Responses**: Return detailed validation errors in standardized format
+- **Type Safety**: Ensure TypeScript interfaces match API contracts
+
 ## Testing Strategy
+
+### Test Isolation Best Practices
+**CRITICAL**: All future tests MUST follow these isolation principles to prevent flaky tests:
+
+#### 1. Self-Contained Test Contexts
+```javascript
+// ✅ CORRECT: Each test creates its own isolated context
+async function createTestContext() {
+  const userEmail = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
+  const user = await createTestUser({ email: userEmail });
+  const authToken = await loginTestUser(userEmail);
+  const campaign = await createTestCampaign({ name: `Campaign-${Date.now()}` });
+  return { authToken, campaign, user };
+}
+
+// ❌ INCORRECT: Shared state between tests
+let sharedAuthToken; // This causes test isolation issues
+```
+
+#### 2. Database Transaction Isolation
+```javascript
+// ✅ RECOMMENDED: Wrap tests in transactions that rollback
+beforeEach(async () => {
+  await db.query('BEGIN');
+});
+
+afterEach(async () => {
+  await db.query('ROLLBACK');
+});
+```
+
+#### 3. Unique Test Data
+- **Always use timestamps and random strings** for unique identifiers
+- **Never rely on shared test data** between different test files
+- **Clean up test data** or use transaction rollbacks
+
+#### 4. Error Handling in Tests
+```javascript
+// ✅ CORRECT: Detailed error messages for debugging
+if (response.status !== 201) {
+  throw new Error(`API call failed: ${response.status} ${JSON.stringify(response.body)}`);
+}
+
+// ❌ INCORRECT: Generic error handling
+expect(response.status).toBe(201); // Doesn't show what went wrong
+```
 
 ### Unit Testing
 - **Backend Services**: Jest for API endpoints, business logic, and data models
 - **Frontend Components**: React Testing Library for component behavior
 - **Utility Functions**: URL validation, CTR calculations, date formatting
+- **Mocking Strategy**: Mock external dependencies (YouTube API, database) consistently
 
 ### Integration Testing
-- **API Integration**: Test complete request/response cycles
-- **Database Operations**: Test CRUD operations and data integrity
+- **API Integration**: Test complete request/response cycles with isolated contexts
+- **Database Operations**: Test CRUD operations with transaction rollbacks
 - **YouTube API Integration**: Mock API responses for reliable testing
-- **Conversion Tracking**: End-to-end attribution flow testing
+- **Conversion Tracking**: End-to-end attribution flow testing with unique tracking IDs
+
+### Test Data Management
+```javascript
+// ✅ CORRECT: Isolated test data creation
+const createIsolatedTestData = async () => {
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substr(2, 9);
+  
+  return {
+    user: {
+      email: `test-${timestamp}-${randomId}@example.com`,
+      password: 'TestPassword123!'
+    },
+    campaign: {
+      name: `Test Campaign ${timestamp}-${randomId}`
+    }
+  };
+};
+```
 
 ### Performance Testing
 - **Load Testing**: Simulate high traffic on shortened URLs
 - **Database Performance**: Query optimization for analytics aggregations
 - **YouTube API Rate Limits**: Test quota management and fallback strategies
+- **Concurrent Request Testing**: Verify system handles parallel requests correctly
 
 ### Security Testing
 - **Input Validation**: SQL injection, XSS prevention
@@ -345,3 +445,68 @@ The application follows a mobile-first design strategy, starting with mobile lay
 - **Background Jobs**: Use queue system for YouTube data updates
 - **Microservices**: Consider splitting into focused services as system grows
 - **Monitoring**: Implement comprehensive logging and metrics collection
+
+## Development Guidelines
+
+### Code Quality Standards
+These guidelines MUST be followed in all future development to maintain system reliability:
+
+#### API Development Checklist
+- [ ] **Response Format**: Does the endpoint follow the standardized response format?
+- [ ] **Error Handling**: Are all error cases handled with appropriate HTTP status codes?
+- [ ] **Validation**: Is input validation implemented using Joi schemas?
+- [ ] **Authentication**: Is authentication properly implemented and tested?
+- [ ] **Documentation**: Are API endpoints documented with examples?
+
+#### Testing Checklist
+- [ ] **Unit Tests**: Are all business logic functions covered by unit tests?
+- [ ] **Integration Tests**: Are API endpoints tested with isolated contexts?
+- [ ] **Error Cases**: Are error scenarios tested (invalid input, auth failures, etc.)?
+- [ ] **Performance**: Are performance-critical paths tested under load?
+- [ ] **Test Isolation**: Do tests create their own data and not rely on shared state?
+
+#### Database Guidelines
+- [ ] **Migrations**: Are schema changes implemented as versioned migrations?
+- [ ] **Indexes**: Are appropriate indexes created for query performance?
+- [ ] **Constraints**: Are foreign key constraints and validations in place?
+- [ ] **Transactions**: Are multi-step operations wrapped in transactions?
+
+### Future Development Priorities
+
+#### Phase 1: API Standardization (Immediate)
+1. **Standardize all API responses** to use consistent format
+2. **Implement comprehensive error handling** across all endpoints
+3. **Add request/response validation** using TypeScript interfaces
+4. **Create API documentation** with OpenAPI/Swagger specs
+
+#### Phase 2: Test Infrastructure (Short-term)
+1. **Implement database transaction rollbacks** for test isolation
+2. **Create test data factories** for consistent test setup
+3. **Add performance benchmarks** for critical endpoints
+4. **Set up continuous integration** with automated testing
+
+#### Phase 3: Monitoring & Observability (Medium-term)
+1. **Add structured logging** with correlation IDs
+2. **Implement health checks** for all services
+3. **Set up metrics collection** for performance monitoring
+4. **Create alerting** for system failures and performance degradation
+
+### Architectural Decisions Record (ADR)
+
+#### ADR-001: Standardized API Response Format
+**Status**: Approved  
+**Decision**: All API endpoints must return responses in the standardized format with `success`, `data`, `message`, and `meta` fields.  
+**Rationale**: Prevents client-side confusion and enables consistent error handling.  
+**Consequences**: Requires updating existing endpoints to match the standard format.
+
+#### ADR-002: Test Isolation Strategy
+**Status**: Approved  
+**Decision**: All integration tests must create isolated test contexts and not share state.  
+**Rationale**: Prevents flaky tests and ensures reliable CI/CD pipeline.  
+**Consequences**: Tests may run slightly slower but will be more reliable.
+
+#### ADR-003: Database Transaction Testing
+**Status**: Recommended  
+**Decision**: Wrap integration tests in database transactions that rollback after each test.  
+**Rationale**: Ensures clean test state without requiring database resets.  
+**Consequences**: Requires careful handling of connection pooling and transaction management.

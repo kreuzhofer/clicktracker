@@ -9,6 +9,7 @@ import {
 } from '../schemas/campaign';
 import { AuthenticatedRequest } from '../types';
 import { CampaignModel } from '../models/Campaign';
+import { sendSuccess, sendError, CommonErrors, SuccessResponses } from '../utils/apiResponse';
 
 const router = Router();
 const campaignModel = new CampaignModel();
@@ -22,10 +23,7 @@ router.post('/',
     // Check if campaign with same name already exists
     const existingCampaign = await campaignModel.findByName(name);
     if (existingCampaign) {
-      return res.status(409).json({
-        error: 'Campaign with this name already exists',
-        code: 'DUPLICATE_CAMPAIGN_NAME'
-      });
+      return sendError(res, CommonErrors.CONFLICT('Campaign with this name already exists'));
     }
 
     const campaign = await campaignModel.create({
@@ -34,7 +32,7 @@ router.post('/',
       tags
     });
 
-    return res.status(201).json(campaign);
+    return SuccessResponses.CREATED(res, campaign, 'Campaign created successfully');
   })
 );
 
@@ -74,15 +72,14 @@ router.get('/',
       });
     }
 
-    return res.json({
+    return SuccessResponses.WITH_PAGINATION(
+      res,
       campaigns,
-      pagination: {
-        total: totalCount,
-        limit: limit as number,
-        offset: offset as number,
-        hasMore: (offset as number) + (limit as number) < totalCount
-      }
-    });
+      totalCount,
+      limit as number,
+      offset as number,
+      'Campaigns retrieved successfully'
+    );
   })
 );
 
@@ -94,13 +91,10 @@ router.get('/:id',
 
     const campaign = await campaignModel.findById(id);
     if (!campaign) {
-      return res.status(404).json({
-        error: 'Campaign not found',
-        code: 'CAMPAIGN_NOT_FOUND'
-      });
+      return sendError(res, CommonErrors.NOT_FOUND('Campaign'));
     }
 
-    return res.json(campaign);
+    return SuccessResponses.OK(res, campaign, 'Campaign retrieved successfully');
   })
 );
 
@@ -115,25 +109,19 @@ router.put('/:id',
     // Check if campaign exists
     const existingCampaign = await campaignModel.findById(id);
     if (!existingCampaign) {
-      return res.status(404).json({
-        error: 'Campaign not found',
-        code: 'CAMPAIGN_NOT_FOUND'
-      });
+      return sendError(res, CommonErrors.NOT_FOUND('Campaign'));
     }
 
     // Check for name conflicts if name is being updated
     if (updateData.name && updateData.name !== existingCampaign.name) {
       const nameConflict = await campaignModel.findByName(updateData.name);
       if (nameConflict) {
-        return res.status(409).json({
-          error: 'Campaign with this name already exists',
-          code: 'DUPLICATE_CAMPAIGN_NAME'
-        });
+        return sendError(res, CommonErrors.CONFLICT('Campaign with this name already exists'));
       }
     }
 
     const updatedCampaign = await campaignModel.update(id, updateData);
-    return res.json(updatedCampaign);
+    return SuccessResponses.OK(res, updatedCampaign, 'Campaign updated successfully');
   })
 );
 
@@ -146,20 +134,14 @@ router.delete('/:id',
     // Check if campaign exists
     const existingCampaign = await campaignModel.findById(id);
     if (!existingCampaign) {
-      return res.status(404).json({
-        error: 'Campaign not found',
-        code: 'CAMPAIGN_NOT_FOUND'
-      });
+      return sendError(res, CommonErrors.NOT_FOUND('Campaign'));
     }
 
     const deleted = await campaignModel.delete(id);
     if (deleted) {
-      return res.status(204).send();
+      return SuccessResponses.NO_CONTENT(res);
     } else {
-      return res.status(500).json({
-        error: 'Failed to delete campaign',
-        code: 'DELETE_FAILED'
-      });
+      return sendError(res, CommonErrors.INTERNAL_ERROR('Failed to delete campaign'));
     }
   })
 );

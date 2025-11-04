@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/AuthService';
 import { AuthenticatedRequest } from '../types';
+import { sendError, CommonErrors } from '../utils/apiResponse';
 
 // Create a singleton instance that can be mocked in tests
 let authServiceInstance: AuthService | null = null;
@@ -32,7 +33,7 @@ export const authenticateToken = async (
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
     if (!token) {
-      res.status(401).json({ error: 'Access token required' });
+      sendError(res, CommonErrors.UNAUTHORIZED('Access token required'));
       return;
     }
 
@@ -41,14 +42,14 @@ export const authenticateToken = async (
     try {
       payload = getAuthService().verifyToken(token);
     } catch (tokenError) {
-      res.status(401).json({ error: 'Invalid or expired token' });
+      sendError(res, CommonErrors.UNAUTHORIZED('Invalid or expired token'));
       return;
     }
     
     // Get user details
     const user = await getAuthService().findUserById(payload.userId);
     if (!user) {
-      res.status(401).json({ error: 'User not found' });
+      sendError(res, CommonErrors.UNAUTHORIZED('User not found'));
       return;
     }
 
@@ -63,7 +64,7 @@ export const authenticateToken = async (
     next();
   } catch (error) {
     console.error('Authentication error:', error);
-    res.status(401).json({ error: 'Invalid or expired token' });
+    sendError(res, CommonErrors.UNAUTHORIZED('Invalid or expired token'));
   }
 };
 

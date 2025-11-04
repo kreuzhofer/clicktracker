@@ -3,6 +3,7 @@ import { validateParams } from '../middleware/validation';
 import { asyncHandler } from '../middleware/errorHandler';
 import { shortCodeParamsSchema } from '../schemas/campaignLink';
 import { URLShortenerService } from '../services/URLShortenerService';
+import { sendError, CommonErrors } from '../utils/apiResponse';
 
 const router = Router();
 const urlShortenerService = new URLShortenerService();
@@ -76,10 +77,7 @@ router.get('/:shortCode',
         `);
       } else {
         // For other errors, return JSON error response
-        res.status(500).json({ 
-          error: 'Internal server error',
-          message: 'Unable to process redirect request'
-        });
+        sendError(res, CommonErrors.INTERNAL_ERROR('Unable to process redirect request'));
       }
     }
   })

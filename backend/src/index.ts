@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import Database from './config/database';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { sendSuccess, sendError } from './utils/apiResponse';
 import { getYouTubeCronService } from './services/YouTubeCronService';
 
 // Load environment variables
@@ -46,24 +47,29 @@ if (process.env.NODE_ENV === 'development') {
 app.get('/health', async (req, res) => {
   try {
     const dbHealthy = await db.healthCheck();
-    res.json({ 
+    return sendSuccess(res, {
       status: dbHealthy ? 'OK' : 'DEGRADED',
       database: dbHealthy ? 'connected' : 'disconnected',
-      timestamp: new Date().toISOString() 
-    });
+      timestamp: new Date().toISOString()
+    }, { message: 'Health check completed' });
   } catch (error) {
-    res.status(503).json({ 
-      status: 'ERROR',
-      database: 'error',
-      timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error'
+    return sendError(res, {
+      statusCode: 503,
+      error: 'SERVICE_UNAVAILABLE',
+      message: 'Health check failed',
+      details: {
+        status: 'ERROR',
+        database: 'error',
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
     });
   }
 });
 
 // Basic route
 app.get('/', (req, res) => {
-  res.json({ 
+  return sendSuccess(res, {
     message: 'Campaign Click Tracker API',
     version: '1.0.0',
     endpoints: {
@@ -72,7 +78,7 @@ app.get('/', (req, res) => {
       analytics: '/api/analytics',
       conversions: '/api/conversions'
     }
-  });
+  }, { message: 'API information retrieved' });
 });
 
 // Import shortener routes separately for root-level mounting

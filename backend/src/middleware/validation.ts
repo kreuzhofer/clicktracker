@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
+import { sendError, CommonErrors } from '../utils/apiResponse';
 
 export const validateRequest = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -14,10 +15,7 @@ export const validateRequest = (schema: Joi.ObjectSchema) => {
         message: detail.message
       }));
 
-      res.status(400).json({
-        error: 'Validation failed',
-        details: errorDetails
-      });
+      sendError(res, CommonErrors.VALIDATION_ERROR('Validation failed', errorDetails));
       return;
     }
 
@@ -40,10 +38,7 @@ export const validateQuery = (schema: Joi.ObjectSchema) => {
         message: detail.message
       }));
 
-      res.status(400).json({
-        error: 'Query validation failed',
-        details: errorDetails
-      });
+      sendError(res, CommonErrors.VALIDATION_ERROR('Query validation failed', errorDetails));
       return;
     }
 
@@ -65,10 +60,7 @@ export const validateParams = (schema: Joi.ObjectSchema) => {
         message: detail.message
       }));
 
-      res.status(400).json({
-        error: 'Parameter validation failed',
-        details: errorDetails
-      });
+      sendError(res, CommonErrors.VALIDATION_ERROR('Parameter validation failed', errorDetails));
       return;
     }
 
