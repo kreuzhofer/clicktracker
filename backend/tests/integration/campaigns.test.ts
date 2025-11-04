@@ -74,7 +74,9 @@ describe('Campaign API Integration Tests', () => {
         .send({})
         .expect(400);
 
-      expect(response.body.error).toContain('name');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
+      expect(response.body.details.some((detail: any) => detail.field === 'name')).toBe(true);
     });
 
     it('should validate campaign name format', async () => {

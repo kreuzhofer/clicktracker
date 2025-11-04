@@ -28,20 +28,20 @@ class Database {
 
     // Handle pool connection events
     this.pool.on('connect', () => {
-      if (!this.isClosed) {
+      if (!this.isClosed && process.env.NODE_ENV !== 'test') {
         console.log('Connected to PostgreSQL database');
       }
     });
 
     this.pool.on('remove', () => {
-      if (!this.isClosed) {
+      if (!this.isClosed && process.env.NODE_ENV !== 'test') {
         console.log('Client removed from pool');
       }
     });
   }
 
   public static getInstance(): Database {
-    if (!Database.instance) {
+    if (!Database.instance || Database.instance.isClosed) {
       Database.instance = new Database();
     }
     return Database.instance;
@@ -56,7 +56,10 @@ class Database {
     try {
       const result = await this.pool.query(text, params);
       const duration = Date.now() - start;
-      console.log('Executed query', { text, duration, rows: result.rowCount });
+      // Only log queries in development mode and not during tests
+      if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV === 'development') {
+        console.log('Executed query', { text, duration, rows: result.rowCount });
+      }
       return result;
     } catch (error) {
       console.error('Database query error:', error);
@@ -69,9 +72,14 @@ class Database {
   }
 
   public async close(): Promise<void> {
+    if (this.isClosed) {
+      return; // Already closed
+    }
     this.isClosed = true;
     await this.pool.end();
-    console.log('Database pool closed');
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('Database pool closed');
+    }
   }
 
   // Health check method

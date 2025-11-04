@@ -2,59 +2,6 @@ import request from 'supertest';
 import app from '../../src/index';
 import { TestHelpers } from '../helpers/testHelpers';
 
-const testHelpers = new TestHelpers();
-import { MockYouTubeService } from '../../src/services/MockYouTubeService';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-
 // Mock the YouTube service to use MockYouTubeService
 jest.mock('../../src/services/YouTubeService', () => {
   const mockService = new (require('../../src/services/MockYouTubeService').MockYouTubeService)();
@@ -98,20 +45,13 @@ jest.mock('../../src/services/YouTubeCronService', () => {
 describe('YouTube API Routes', () => {
   let authToken: string;
 
-  beforeAll(async () => {
-    await testHelpers.setupTestDatabase();
-    
-    // Create test user and get auth token
-    const testUser = await testHelpers.createTestUser();
-    authToken = testUser.token;
-  });
-
-  afterAll(async () => {
-    await testHelpers.cleanupTestDatabase();
-  });
-
   beforeEach(async () => {
-    await testHelpers.cleanupTestData();
+    // Reset mocks before each test
+    jest.clearAllMocks();
+    
+    // Create fresh test user and get auth token for each test
+    await TestHelpers.createTestUser();
+    authToken = await TestHelpers.loginTestUser();
   });
 
   describe('POST /api/youtube/validate', () => {
@@ -153,8 +93,9 @@ describe('YouTube API Routes', () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Invalid YouTube URL');
-      expect(response.body.message).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
+      expect(response.body.details[0].message).toBe('Invalid YouTube URL format');
     });
 
     it('should require authentication', async () => {
@@ -417,10 +358,9 @@ describe('YouTube API Routes', () => {
   describe('GET /api/youtube/stats/:videoId', () => {
     it('should fetch statistics for a specific video', async () => {
       // First, we need to create some test data
-      await testHelpers.createTestCampaign();
-      const campaign = await testHelpers.getTestCampaign();
+      const campaign = await TestHelpers.createTestCampaign();
       
-      await testHelpers.createTestCampaignLink(campaign.id, {
+      await TestHelpers.createTestCampaignLink(campaign.id, {
         youtube_video_id: 'dQw4w9WgXcQ'
       });
 

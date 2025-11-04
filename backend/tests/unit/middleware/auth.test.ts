@@ -1,17 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { authenticateToken, optionalAuth } from '../../../src/middleware/auth';
+import { authenticateToken, optionalAuth, setAuthService } from '../../../src/middleware/auth';
 import { AuthenticatedRequest } from '../../../src/types';
 import { AuthService } from '../../../src/services/AuthService';
-
-// Mock the entire auth middleware module
-jest.mock('../../../src/services/AuthService', () => {
-  return {
-    AuthService: jest.fn().mockImplementation(() => ({
-      verifyToken: jest.fn(),
-      findUserById: jest.fn()
-    }))
-  };
-});
 
 describe('Authentication Middleware Unit Tests', () => {
   let mockReq: Partial<AuthenticatedRequest>;
@@ -35,10 +25,19 @@ describe('Authentication Middleware Unit Tests', () => {
     // Reset mocks
     jest.clearAllMocks();
     
-    // Mock AuthService methods
-    mockAuthService = new AuthService() as jest.Mocked<AuthService>;
-    mockAuthService.verifyToken = jest.fn();
-    mockAuthService.findUserById = jest.fn();
+    // Create mock AuthService
+    mockAuthService = {
+      register: jest.fn(),
+      login: jest.fn(),
+      findUserByEmail: jest.fn(),
+      findUserById: jest.fn(),
+      generateToken: jest.fn(),
+      verifyToken: jest.fn(),
+      refreshToken: jest.fn()
+    } as unknown as jest.Mocked<AuthService>;
+    
+    // Inject the mock service
+    setAuthService(mockAuthService);
   });
 
   describe('authenticateToken', () => {

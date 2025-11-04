@@ -131,7 +131,7 @@ describe('YouTubeCronService', () => {
   describe('Manual Updates', () => {
     beforeEach(() => {
       // Setup mock data
-      mockVideoStatsModel.getActiveVideoIds.mockResolvedValue(['video1', 'video2', 'video3']);
+      mockVideoStatsModel.findActiveVideoIds.mockResolvedValue(['video1', 'video2', 'video3']);
       mockVideoStatsModel.upsert.mockResolvedValue({
         video_id: 'test',
         view_count: 1000,
@@ -150,12 +150,12 @@ describe('YouTubeCronService', () => {
       expect(result.success).toBe(true);
       expect(result.updatedCount).toBe(3);
       expect(result.errors).toHaveLength(0);
-      expect(mockVideoStatsModel.getActiveVideoIds).toHaveBeenCalled();
+      expect(mockVideoStatsModel.findActiveVideoIds).toHaveBeenCalled();
       expect(mockVideoStatsModel.upsert).toHaveBeenCalledTimes(3);
     });
 
     it('should handle empty video list', async () => {
-      mockVideoStatsModel.getActiveVideoIds.mockResolvedValue([]);
+      mockVideoStatsModel.findActiveVideoIds.mockResolvedValue([]);
 
       const result = await cronService.triggerUpdate();
 
@@ -166,7 +166,7 @@ describe('YouTubeCronService', () => {
 
     it('should process videos in batches', async () => {
       const videoIds = ['video1', 'video2', 'video3', 'video4', 'video5'];
-      mockVideoStatsModel.getActiveVideoIds.mockResolvedValue(videoIds);
+      mockVideoStatsModel.findActiveVideoIds.mockResolvedValue(videoIds);
 
       // Add mock videos
       videoIds.forEach((id, index) => {
@@ -184,7 +184,7 @@ describe('YouTubeCronService', () => {
     });
 
     it('should handle API errors gracefully', async () => {
-      mockVideoStatsModel.getActiveVideoIds.mockResolvedValue(['video1', 'video2']);
+      mockVideoStatsModel.findActiveVideoIds.mockResolvedValue(['video1', 'video2']);
       mockYouTubeService.updateConfig({ simulateNetworkError: true });
 
       const result = await cronService.triggerUpdate();
@@ -195,7 +195,7 @@ describe('YouTubeCronService', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      mockVideoStatsModel.getActiveVideoIds.mockResolvedValue(['video1']);
+      mockVideoStatsModel.findActiveVideoIds.mockResolvedValue(['video1']);
       mockVideoStatsModel.upsert.mockRejectedValue(new Error('Database error'));
 
       const result = await cronService.triggerUpdate();
@@ -206,7 +206,7 @@ describe('YouTubeCronService', () => {
     });
 
     it('should prevent concurrent updates', async () => {
-      mockVideoStatsModel.getActiveVideoIds.mockImplementation(() => 
+      mockVideoStatsModel.findActiveVideoIds.mockImplementation(() => 
         new Promise(resolve => setTimeout(() => resolve(['video1']), 100))
       );
 
@@ -276,16 +276,16 @@ describe('YouTubeCronService', () => {
 
   describe('Cleanup Operations', () => {
     it('should cleanup stale stats successfully', async () => {
-      mockVideoStatsModel.cleanupUnusedStats.mockResolvedValue(5);
+      mockVideoStatsModel.deleteUnusedStats.mockResolvedValue(5);
 
       const result = await cronService.cleanupStaleStats();
 
       expect(result.deletedCount).toBe(5);
-      expect(mockVideoStatsModel.cleanupUnusedStats).toHaveBeenCalled();
+      expect(mockVideoStatsModel.deleteUnusedStats).toHaveBeenCalled();
     });
 
     it('should handle cleanup errors', async () => {
-      mockVideoStatsModel.cleanupUnusedStats.mockRejectedValue(new Error('Cleanup failed'));
+      mockVideoStatsModel.deleteUnusedStats.mockRejectedValue(new Error('Cleanup failed'));
 
       await expect(cronService.cleanupStaleStats()).rejects.toThrow('Cleanup failed');
     });
@@ -293,7 +293,7 @@ describe('YouTubeCronService', () => {
 
   describe('Error Scenarios', () => {
     it('should handle quota exceeded errors', async () => {
-      mockVideoStatsModel.getActiveVideoIds.mockResolvedValue(['video1']);
+      mockVideoStatsModel.findActiveVideoIds.mockResolvedValue(['video1']);
       mockYouTubeService.updateConfig({ simulateQuotaExceeded: true });
 
       const result = await cronService.triggerUpdate();
@@ -304,7 +304,7 @@ describe('YouTubeCronService', () => {
 
     it('should continue processing other batches when one fails', async () => {
       const videoIds = ['video1', 'video2', 'video3', 'video4'];
-      mockVideoStatsModel.getActiveVideoIds.mockResolvedValue(videoIds);
+      mockVideoStatsModel.findActiveVideoIds.mockResolvedValue(videoIds);
 
       // Mock the service to fail on first batch but succeed on second
       let callCount = 0;
@@ -325,7 +325,7 @@ describe('YouTubeCronService', () => {
     });
 
     it('should handle critical errors in update process', async () => {
-      mockVideoStatsModel.getActiveVideoIds.mockRejectedValue(new Error('Critical database error'));
+      mockVideoStatsModel.findActiveVideoIds.mockRejectedValue(new Error('Critical database error'));
 
       const result = await cronService.triggerUpdate();
 
@@ -338,7 +338,7 @@ describe('YouTubeCronService', () => {
   describe('Batch Processing', () => {
     it('should respect batch size configuration', async () => {
       const videoIds = ['video1', 'video2', 'video3', 'video4', 'video5'];
-      mockVideoStatsModel.getActiveVideoIds.mockResolvedValue(videoIds);
+      mockVideoStatsModel.findActiveVideoIds.mockResolvedValue(videoIds);
 
       // Create service with batch size of 2
       const batchService = new YouTubeCronService({
@@ -363,7 +363,7 @@ describe('YouTubeCronService', () => {
 
     it('should add delays between batches', async () => {
       const videoIds = ['video1', 'video2', 'video3'];
-      mockVideoStatsModel.getActiveVideoIds.mockResolvedValue(videoIds);
+      mockVideoStatsModel.findActiveVideoIds.mockResolvedValue(videoIds);
 
       const batchService = new YouTubeCronService({
         enabled: false,

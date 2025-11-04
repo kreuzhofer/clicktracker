@@ -2,36 +2,8 @@ import request from 'supertest';
 import app from '../../src/index';
 import { TestHelpers } from '../helpers/testHelpers';
 import { YouTubeService } from '../../src/services/YouTubeService';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-import { describe } from 'node:test';
 
-// Jest globals are available through setup files
+// Jest globals (describe, it, expect, beforeAll, beforeEach) are available through setup files
 
 // Skip these tests unless REAL_API_TESTS environment variable is set
 const describeRealApi = process.env.REAL_API_TESTS === 'true' ? describe : describe.skip;

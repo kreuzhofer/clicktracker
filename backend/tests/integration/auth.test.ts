@@ -190,6 +190,9 @@ describe('Authentication API Integration Tests', () => {
     });
 
     it('should refresh valid token', async () => {
+      // Add a small delay to ensure different timestamp
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const response = await request(app)
         .post('/api/auth/refresh')
         .send({ token: validToken })
