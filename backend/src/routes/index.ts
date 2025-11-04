@@ -14,7 +14,6 @@ const router = Router();
 
 // Public routes (no authentication required)
 router.use('/auth', authRoutes);
-router.use('/', shortenerRoutes); // Short URL redirects should be public
 
 // Protected routes (authentication required)
 router.use('/campaigns', authenticateToken, campaignRoutes);
@@ -24,5 +23,8 @@ router.use('/youtube', authenticateToken, youtubeRoutes);
 
 // Conversion tracking can be public (for tracking scripts)
 router.use('/conversions', optionalAuth, conversionRoutes);
+
+// Short URL redirects should be last to avoid conflicts (catch-all pattern)
+router.use('/', shortenerRoutes);
 
 export default router;

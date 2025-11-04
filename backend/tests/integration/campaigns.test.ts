@@ -435,15 +435,11 @@ describe('Campaign API Integration Tests', () => {
       const { duration } = await TestHelpers.measureExecutionTime(async () => {
         const response = await request(app)
           .get('/api/campaigns')
-          .set('Authorization', `Bearer ${authToken}`);
+          .set('Authorization', `Bearer ${authToken}`)
+          .expect(200);
         
-        // Skip test if route is not implemented (501)
-        if (response.status === 501) {
-          console.log('Skipping test: Campaign listing not fully implemented');
-          return;
-        }
-        
-        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('campaigns');
+        expect(response.body).toHaveProperty('pagination');
       });
 
       // Should complete within reasonable time (relaxed for CI environments)
@@ -464,15 +460,11 @@ describe('Campaign API Integration Tests', () => {
       const { duration } = await TestHelpers.measureExecutionTime(async () => {
         const response = await request(app)
           .get('/api/campaigns?search=searchable')
-          .set('Authorization', `Bearer ${authToken}`);
+          .set('Authorization', `Bearer ${authToken}`)
+          .expect(200);
         
-        // Skip test if route is not implemented (501)
-        if (response.status === 501) {
-          console.log('Skipping test: Campaign search not fully implemented');
-          return;
-        }
-        
-        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('campaigns');
+        expect(response.body.campaigns.length).toBeGreaterThan(0);
       });
 
       // Should complete within reasonable time (relaxed for CI environments)
