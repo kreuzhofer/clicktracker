@@ -31,6 +31,21 @@ describe('Campaign API Integration Tests', () => {
       expect(response.body.tags).toEqual(campaignData.tags);
     });
 
+    it('should create campaign with minimal data', async () => {
+      const campaignData = { name: 'Minimal Campaign' };
+
+      const response = await request(app)
+        .post('/api/campaigns')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(campaignData)
+        .expect(201);
+
+      TestHelpers.expectValidCampaign(response.body);
+      expect(response.body.name).toBe(campaignData.name);
+      expect(response.body.description).toBeNull();
+      expect(response.body.tags).toBeNull();
+    });
+
     it('should reject campaign with duplicate name', async () => {
       const campaignData = { name: 'Duplicate Campaign' };
 
@@ -42,18 +57,60 @@ describe('Campaign API Integration Tests', () => {
         .expect(201);
 
       // Try to create duplicate
-      await request(app)
+      const response = await request(app)
         .post('/api/campaigns')
         .set('Authorization', `Bearer ${authToken}`)
         .send(campaignData)
         .expect(409);
+
+      expect(response.body.error).toBe('Campaign with this name already exists');
+      expect(response.body.code).toBe('DUPLICATE_CAMPAIGN_NAME');
     });
 
     it('should validate required fields', async () => {
-      await request(app)
+      const response = await request(app)
         .post('/api/campaigns')
         .set('Authorization', `Bearer ${authToken}`)
         .send({})
+        .expect(400);
+
+      expect(response.body.error).toContain('name');
+    });
+
+    it('should validate campaign name format', async () => {
+      const invalidNames = [
+        'Campaign with @special chars!',
+        'Campaign with 🚀 emoji',
+        'Campaign with <script>alert("xss")</script>',
+        ''
+      ];
+
+      for (const name of invalidNames) {
+        await request(app)
+          .post('/api/campaigns')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ name })
+          .expect(400);
+      }
+    });
+
+    it('should validate campaign name length', async () => {
+      const longName = 'a'.repeat(256); // Exceeds 255 character limit
+
+      await request(app)
+        .post('/api/campaigns')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: longName })
+        .expect(400);
+    });
+
+    it('should validate tags array', async () => {
+      const tooManyTags = Array.from({ length: 11 }, (_, i) => `tag${i}`);
+
+      await request(app)
+        .post('/api/campaigns')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'Test Campaign', tags: tooManyTags })
         .expect(400);
     });
 
@@ -66,7 +123,7 @@ describe('Campaign API Integration Tests', () => {
   });
 
   describe('GET /api/campaigns', () => {
-    it('should return list of campaigns', async () => {
+    it('should return list of campaigns with pagination', async () => {
       // Create test campaigns
       await TestHelpers.createTestCampaign({ name: 'Campaign 1' });
       await TestHelpers.createTestCampaign({ name: 'Campaign 2' });
@@ -76,9 +133,11 @@ describe('Campaign API Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBe(2);
-      response.body.forEach(TestHelpers.expectValidCampaign);
+      expect(response.body).toHaveProperty('campaigns');
+      expect(response.body).toHaveProperty('pagination');
+      expect(Array.isArray(response.body.campaigns)).toBe(true);
+      expect(response.body.campaigns.length).toBe(2);
+      response.body.campaigns.forEach(TestHelpers.expectValidCampaign);
     });
 
     it('should support search functionality', async () => {
@@ -90,8 +149,259 @@ describe('Campaign API Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body.length).toBe(1);
-      expect(response.body[0].name).toContain('Summer');
+      expect(response.body.campaigns.length).toBe(1);
+      expect(response.body.campaigns[0].name).toContain('Summer');
+    });
+
+    it('should support pagination parameters', async () => {
+      // Create multiple campaigns
+      for (let i = 1; i <= 5; i++) {
+        await TestHelpers.createTestCampaign({ name: `Campaign ${i}` });
+      }
+
+      const response = await request(app)
+        .get('/api/campaigns?limit=2&offset=1')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.campaigns.length).toBe(2);
+      expect(response.body.pagination.limit).toBe(2);
+      expect(response.body.pagination.offset).toBe(1);
+    });
+
+    it('should validate pagination parameters', async () => {
+      await request(app)
+        .get('/api/campaigns?limit=101') // Exceeds max limit
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
+
+      await request(app)
+        .get('/api/campaigns?offset=-1') // Negative offset
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
+    });
+
+    it('should require authentication', async () => {
+      await request(app)
+        .get('/api/campaigns')
+        .expect(401);
+    });
+  });
+
+  describe('GET /api/campaigns/:id', () => {
+    it('should return campaign by ID', async () => {
+      const campaign = await TestHelpers.createTestCampaign({ name: 'Test Campaign' });
+
+      const response = await request(app)
+        .get(`/api/campaigns/${campaign.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      TestHelpers.expectValidCampaign(response.body);
+      expect(response.body.id).toBe(campaign.id);
+      expect(response.body.name).toBe(campaign.name);
+    });
+
+    it('should return 404 for non-existent campaign', async () => {
+      const response = await request(app)
+        .get('/api/campaigns/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(404);
+
+      expect(response.body.error).toBe('Campaign not found');
+      expect(response.body.code).toBe('CAMPAIGN_NOT_FOUND');
+    });
+
+    it('should validate UUID format', async () => {
+      await request(app)
+        .get('/api/campaigns/invalid-uuid')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
+    });
+
+    it('should require authentication', async () => {
+      await request(app)
+        .get('/api/campaigns/00000000-0000-0000-0000-000000000000')
+        .expect(401);
+    });
+  });
+
+  describe('PUT /api/campaigns/:id', () => {
+    it('should update campaign with valid data', async () => {
+      const campaign = await TestHelpers.createTestCampaign({ name: 'Original Campaign' });
+      const updateData = {
+        name: 'Updated Campaign',
+        description: 'Updated description',
+        tags: ['updated', 'test']
+      };
+
+      const response = await request(app)
+        .put(`/api/campaigns/${campaign.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData)
+        .expect(200);
+
+      TestHelpers.expectValidCampaign(response.body);
+      expect(response.body.name).toBe(updateData.name);
+      expect(response.body.description).toBe(updateData.description);
+      expect(response.body.tags).toEqual(updateData.tags);
+      expect(new Date(response.body.updated_at).getTime()).toBeGreaterThan(
+        new Date(campaign.updated_at).getTime()
+      );
+    });
+
+    it('should support partial updates', async () => {
+      const campaign = await TestHelpers.createTestCampaign({ 
+        name: 'Original Campaign',
+        description: 'Original description'
+      });
+
+      const response = await request(app)
+        .put(`/api/campaigns/${campaign.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ description: 'Updated description only' })
+        .expect(200);
+
+      expect(response.body.name).toBe('Original Campaign'); // Unchanged
+      expect(response.body.description).toBe('Updated description only'); // Changed
+    });
+
+    it('should reject duplicate names', async () => {
+      const campaign1 = await TestHelpers.createTestCampaign({ name: 'Campaign 1' });
+      const campaign2 = await TestHelpers.createTestCampaign({ name: 'Campaign 2' });
+
+      const response = await request(app)
+        .put(`/api/campaigns/${campaign2.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'Campaign 1' })
+        .expect(409);
+
+      expect(response.body.error).toBe('Campaign with this name already exists');
+    });
+
+    it('should return 404 for non-existent campaign', async () => {
+      const response = await request(app)
+        .put('/api/campaigns/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'Updated Campaign' })
+        .expect(404);
+
+      expect(response.body.error).toBe('Campaign not found');
+    });
+
+    it('should validate update data', async () => {
+      const campaign = await TestHelpers.createTestCampaign();
+
+      await request(app)
+        .put(`/api/campaigns/${campaign.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'Invalid @name!' })
+        .expect(400);
+    });
+
+    it('should require authentication', async () => {
+      await request(app)
+        .put('/api/campaigns/00000000-0000-0000-0000-000000000000')
+        .send({ name: 'Updated Campaign' })
+        .expect(401);
+    });
+  });
+
+  describe('DELETE /api/campaigns/:id', () => {
+    it('should delete existing campaign', async () => {
+      const campaign = await TestHelpers.createTestCampaign({ name: 'To Delete' });
+
+      await request(app)
+        .delete(`/api/campaigns/${campaign.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(204);
+
+      // Verify campaign is deleted
+      await request(app)
+        .get(`/api/campaigns/${campaign.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(404);
+    });
+
+    it('should return 404 for non-existent campaign', async () => {
+      const response = await request(app)
+        .delete('/api/campaigns/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(404);
+
+      expect(response.body.error).toBe('Campaign not found');
+    });
+
+    it('should validate UUID format', async () => {
+      await request(app)
+        .delete('/api/campaigns/invalid-uuid')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
+    });
+
+    it('should require authentication', async () => {
+      await request(app)
+        .delete('/api/campaigns/00000000-0000-0000-0000-000000000000')
+        .expect(401);
+    });
+  });
+
+  describe('Error Scenarios', () => {
+    it('should handle database connection errors gracefully', async () => {
+      // This would require mocking the database connection
+      // For now, we'll test that the error handler middleware works
+      const response = await request(app)
+        .post('/api/campaigns')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: null }) // This should cause a database error
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should handle malformed JSON', async () => {
+      await request(app)
+        .post('/api/campaigns')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('Content-Type', 'application/json')
+        .send('{ invalid json }')
+        .expect(400);
+    });
+  });
+
+  describe('Concurrent Operations', () => {
+    it('should handle concurrent campaign creation', async () => {
+      const requests = Array.from({ length: 10 }, (_, i) => 
+        () => request(app)
+          .post('/api/campaigns')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ name: `Concurrent Campaign ${i}` })
+      );
+
+      const results = await TestHelpers.runConcurrentRequests(requests, 5);
+      
+      // All requests should succeed
+      results.forEach(result => {
+        expect(result.status).toBe(201);
+      });
+    });
+
+    it('should handle concurrent updates to same campaign', async () => {
+      const campaign = await TestHelpers.createTestCampaign({ name: 'Concurrent Test' });
+
+      const requests = Array.from({ length: 5 }, (_, i) => 
+        () => request(app)
+          .put(`/api/campaigns/${campaign.id}`)
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ description: `Updated description ${i}` })
+      );
+
+      const results = await TestHelpers.runConcurrentRequests(requests, 3);
+      
+      // All requests should succeed (last one wins)
+      results.forEach(result => {
+        expect(result.status).toBe(200);
+      });
     });
   });
 
@@ -110,6 +420,47 @@ describe('Campaign API Integration Tests', () => {
 
       // Should complete within reasonable time
       expect(duration).toBeLessThan(5000); // 5 seconds
+    });
+
+    it('should handle campaign listing with large dataset', async () => {
+      // Create many campaigns
+      const createRequests = Array.from({ length: 100 }, (_, i) => 
+        () => TestHelpers.createTestCampaign({ name: `Performance Campaign ${i}` })
+      );
+
+      await TestHelpers.runConcurrentRequests(createRequests, 20);
+
+      const { duration } = await TestHelpers.measureExecutionTime(async () => {
+        await request(app)
+          .get('/api/campaigns?limit=50')
+          .set('Authorization', `Bearer ${authToken}`)
+          .expect(200);
+      });
+
+      // Should complete within reasonable time
+      expect(duration).toBeLessThan(1000); // 1 second
+    });
+
+    it('should handle search performance with large dataset', async () => {
+      // Create campaigns with searchable content
+      const createRequests = Array.from({ length: 50 }, (_, i) => 
+        () => TestHelpers.createTestCampaign({ 
+          name: `Search Campaign ${i}`,
+          description: `This is a searchable description for campaign ${i}`
+        })
+      );
+
+      await TestHelpers.runConcurrentRequests(createRequests, 10);
+
+      const { duration } = await TestHelpers.measureExecutionTime(async () => {
+        await request(app)
+          .get('/api/campaigns?search=searchable')
+          .set('Authorization', `Bearer ${authToken}`)
+          .expect(200);
+      });
+
+      // Should complete within reasonable time
+      expect(duration).toBeLessThan(1000); // 1 second
     });
   });
 });

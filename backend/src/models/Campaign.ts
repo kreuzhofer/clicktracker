@@ -26,9 +26,17 @@ export class CampaignModel {
   }
 
   async findById(id: string): Promise<Campaign | null> {
-    const query = 'SELECT * FROM campaigns WHERE id = $1';
-    const result = await this.db.query(query, [id]);
-    return result.rows[0] || null;
+    try {
+      const query = 'SELECT * FROM campaigns WHERE id = $1';
+      const result = await this.db.query(query, [id]);
+      return result.rows[0] || null;
+    } catch (error: any) {
+      // Handle invalid UUID format
+      if (error.code === '22P02') {
+        return null;
+      }
+      throw error;
+    }
   }
 
   async findAll(limit: number = 50, offset: number = 0): Promise<Campaign[]> {
@@ -97,9 +105,17 @@ export class CampaignModel {
   }
 
   async delete(id: string): Promise<boolean> {
-    const query = 'DELETE FROM campaigns WHERE id = $1';
-    const result = await this.db.query(query, [id]);
-    return result.rowCount > 0;
+    try {
+      const query = 'DELETE FROM campaigns WHERE id = $1';
+      const result = await this.db.query(query, [id]);
+      return result.rowCount > 0;
+    } catch (error: any) {
+      // Handle invalid UUID format
+      if (error.code === '22P02') {
+        return false;
+      }
+      throw error;
+    }
   }
 
   async count(): Promise<number> {
@@ -109,8 +125,16 @@ export class CampaignModel {
   }
 
   async exists(id: string): Promise<boolean> {
-    const query = 'SELECT 1 FROM campaigns WHERE id = $1';
-    const result = await this.db.query(query, [id]);
-    return result.rows.length > 0;
+    try {
+      const query = 'SELECT 1 FROM campaigns WHERE id = $1';
+      const result = await this.db.query(query, [id]);
+      return result.rows.length > 0;
+    } catch (error: any) {
+      // Handle invalid UUID format
+      if (error.code === '22P02') {
+        return false;
+      }
+      throw error;
+    }
   }
 }
