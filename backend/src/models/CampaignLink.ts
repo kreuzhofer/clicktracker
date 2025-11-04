@@ -1,6 +1,5 @@
 import Database from '../config/database';
 import { CampaignLink, CreateCampaignLinkRequest, UpdateCampaignLinkRequest } from '../types';
-import { v4 as uuidv4 } from 'uuid';
 
 export class CampaignLinkModel {
   private db: Database;
@@ -143,10 +142,10 @@ export class CampaignLinkModel {
   }
 
   private generateShortCode(): string {
-    // Generate a random 8-character alphanumeric string
+    // Generate a random 6-character alphanumeric string to fit in VARCHAR(10)
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 6; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;

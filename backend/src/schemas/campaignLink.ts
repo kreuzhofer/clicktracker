@@ -22,12 +22,12 @@ export const createCampaignLinkSchema = Joi.object({
   custom_alias: Joi.string()
     .trim()
     .min(3)
-    .max(50)
+    .max(10)
     .pattern(/^[a-zA-Z0-9\-_]+$/)
     .optional()
     .messages({
       'string.min': 'Custom alias must be at least 3 characters long',
-      'string.max': 'Custom alias cannot exceed 50 characters',
+      'string.max': 'Custom alias cannot exceed 10 characters',
       'string.pattern.base': 'Custom alias can only contain letters, numbers, hyphens, and underscores'
     })
 });
@@ -50,12 +50,12 @@ export const updateCampaignLinkSchema = Joi.object({
   custom_alias: Joi.string()
     .trim()
     .min(3)
-    .max(50)
+    .max(10)
     .pattern(/^[a-zA-Z0-9\-_]+$/)
     .optional()
     .messages({
       'string.min': 'Custom alias must be at least 3 characters long',
-      'string.max': 'Custom alias cannot exceed 50 characters',
+      'string.max': 'Custom alias cannot exceed 10 characters',
       'string.pattern.base': 'Custom alias can only contain letters, numbers, hyphens, and underscores'
     })
 });
