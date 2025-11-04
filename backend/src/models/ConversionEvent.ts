@@ -8,6 +8,17 @@ export class ConversionEventModel {
     this.db = Database.getInstance();
   }
 
+  /**
+   * Convert database row to ConversionEvent with proper number types
+   */
+  private convertRowToConversionEvent(row: any): ConversionEvent {
+    return {
+      ...row,
+      revenue_amount: row.revenue_amount ? parseFloat(row.revenue_amount) : null,
+      event_data: row.event_data ? (typeof row.event_data === 'string' ? JSON.parse(row.event_data) : row.event_data) : null
+    };
+  }
+
   async create(conversionData: CreateConversionEventRequest): Promise<ConversionEvent> {
     const query = `
       INSERT INTO conversion_events (tracking_id, campaign_link_id, event_type, revenue_amount, event_data)
@@ -24,13 +35,13 @@ export class ConversionEventModel {
     ];
 
     const result = await this.db.query(query, values);
-    return result.rows[0];
+    return this.convertRowToConversionEvent(result.rows[0]);
   }
 
   async findById(id: string): Promise<ConversionEvent | null> {
     const query = 'SELECT * FROM conversion_events WHERE id = $1';
     const result = await this.db.query(query, [id]);
-    return result.rows[0] || null;
+    return result.rows[0] ? this.convertRowToConversionEvent(result.rows[0]) : null;
   }
 
   async findByTrackingId(trackingId: string): Promise<ConversionEvent[]> {
@@ -40,7 +51,7 @@ export class ConversionEventModel {
       ORDER BY converted_at DESC
     `;
     const result = await this.db.query(query, [trackingId]);
-    return result.rows;
+    return result.rows.map((row: any) => this.convertRowToConversionEvent(row));
   }
 
   async findByCampaignLinkId(campaignLinkId: string, limit: number = 100, offset: number = 0): Promise<ConversionEvent[]> {
@@ -51,7 +62,7 @@ export class ConversionEventModel {
       LIMIT $2 OFFSET $3
     `;
     const result = await this.db.query(query, [campaignLinkId, limit, offset]);
-    return result.rows;
+    return result.rows.map((row: any) => this.convertRowToConversionEvent(row));
   }
 
   async findByEventType(eventType: ConversionEventType, campaignLinkId?: string): Promise<ConversionEvent[]> {
@@ -69,7 +80,7 @@ export class ConversionEventModel {
     query += ' ORDER BY converted_at DESC';
 
     const result = await this.db.query(query, values);
-    return result.rows;
+    return result.rows.map((row: any) => this.convertRowToConversionEvent(row));
   }
 
   async findByDateRange(startDate: Date, endDate: Date, campaignLinkId?: string): Promise<ConversionEvent[]> {
@@ -87,7 +98,7 @@ export class ConversionEventModel {
     query += ' ORDER BY converted_at DESC';
 
     const result = await this.db.query(query, values);
-    return result.rows;
+    return result.rows.map((row: any) => this.convertRowToConversionEvent(row));
   }
 
   async countByCampaignLinkId(campaignLinkId: string): Promise<number> {

@@ -196,6 +196,9 @@ describe('Campaign Model Unit Tests', () => {
         description: 'Updated description'
       };
 
+      // Add a small delay to ensure updated_at timestamp is different
+      await new Promise(resolve => setTimeout(resolve, 10));
+
       const updated = await campaignModel.update(campaign.id, updateData);
 
       expect(updated).not.toBeNull();
