@@ -168,6 +168,7 @@ export interface AuthResponse {
 export interface JWTPayload {
   userId: string;
   email: string;
+  jti?: string; // JWT ID - unique identifier for each token
   iat?: number;
   exp?: number;
 }

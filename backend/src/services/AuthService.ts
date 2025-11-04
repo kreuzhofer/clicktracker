@@ -99,7 +99,8 @@ export class AuthService {
   generateToken(userId: string, email: string): string {
     const payload: JWTPayload = {
       userId,
-      email
+      email,
+      jti: uuidv4() // Unique identifier for each token
     };
 
     return jwt.sign(payload, this.jwtSecret, { expiresIn: this.jwtExpiresIn } as jwt.SignOptions);
