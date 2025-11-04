@@ -75,8 +75,14 @@ app.get('/', (req, res) => {
   });
 });
 
+// Import shortener routes separately for root-level mounting
+import shortenerRoutes from './routes/shortener';
+
 // API routes
 app.use('/api', routes);
+
+// Mount shortener routes at root level for short URLs
+app.use('/', shortenerRoutes);
 
 // Error handling middleware (must be last)
 app.use(notFoundHandler);

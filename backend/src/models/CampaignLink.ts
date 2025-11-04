@@ -10,7 +10,8 @@ export class CampaignLinkModel {
   }
 
   async create(campaignId: string, linkData: CreateCampaignLinkRequest): Promise<CampaignLink> {
-    const shortCode = this.generateShortCode();
+    // Use custom alias as short code if provided, otherwise generate unique short code
+    const shortCode = linkData.custom_alias || await this.generateUniqueShortCode();
     
     const query = `
       INSERT INTO campaign_links (campaign_id, short_code, landing_page_url, youtube_video_id, custom_alias)

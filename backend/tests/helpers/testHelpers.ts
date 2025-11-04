@@ -48,8 +48,8 @@ export class TestHelpers {
   static async createTestCampaignLink(campaignId: string, linkData: Partial<CreateCampaignLinkRequest> = {}) {
     const defaultLink: CreateCampaignLinkRequest = {
       landing_page_url: 'https://example.com/landing',
-      youtube_video_id: 'dQw4w9WgXcQ',
-      custom_alias: `test-alias-${Date.now()}`
+      youtube_video_id: 'dQw4w9WgXcQ'
+      // Don't set custom_alias by default to let the system generate short codes
     };
 
     return await this.campaignLinkModel.create(campaignId, { ...defaultLink, ...linkData });
