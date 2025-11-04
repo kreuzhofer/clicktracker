@@ -132,6 +132,59 @@ export interface DatabaseConfig {
   connectionTimeoutMillis: number;
 }
 
+// Authentication interfaces
+export interface User {
+  id: string;
+  email: string;
+  password_hash: string;
+  first_name: string;
+  last_name: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface CreateUserRequest {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+  };
+}
+
+export interface JWTPayload {
+  userId: string;
+  email: string;
+  iat?: number;
+  exp?: number;
+}
+
+export interface AuthenticatedRequest {
+  user?: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+  };
+  body: any;
+  params: any;
+  query: any;
+  headers: any;
+}
+
 // YouTube API interfaces
 export interface YouTubeVideoMetadata {
   video_id: string;

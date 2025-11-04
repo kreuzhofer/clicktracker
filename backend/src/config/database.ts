@@ -4,6 +4,7 @@ import { DatabaseConfig } from '../types';
 class Database {
   private pool: Pool;
   private static instance: Database;
+  private isClosed: boolean = false;
 
   private constructor() {
     const config: PoolConfig = {
@@ -27,11 +28,15 @@ class Database {
 
     // Handle pool connection events
     this.pool.on('connect', () => {
-      console.log('Connected to PostgreSQL database');
+      if (!this.isClosed) {
+        console.log('Connected to PostgreSQL database');
+      }
     });
 
     this.pool.on('remove', () => {
-      console.log('Client removed from pool');
+      if (!this.isClosed) {
+        console.log('Client removed from pool');
+      }
     });
   }
 
@@ -64,6 +69,7 @@ class Database {
   }
 
   public async close(): Promise<void> {
+    this.isClosed = true;
     await this.pool.end();
     console.log('Database pool closed');
   }

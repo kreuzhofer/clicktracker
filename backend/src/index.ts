@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import Database from './config/database';
+import routes from './routes';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
 // Load environment variables
 dotenv.config();
@@ -16,8 +18,20 @@ const db = Database.getInstance();
 // Middleware
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request logging middleware (only in development)
+if (process.env.NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`, {
+      body: req.body,
+      query: req.query,
+      headers: req.headers.authorization ? 'Bearer [REDACTED]' : 'No auth'
+    });
+    next();
+  });
+}
 
 // Health check endpoint with database check
 app.get('/health', async (req, res) => {
@@ -40,8 +54,24 @@ app.get('/health', async (req, res) => {
 
 // Basic route
 app.get('/', (req, res) => {
-  res.json({ message: 'Campaign Click Tracker API' });
+  res.json({ 
+    message: 'Campaign Click Tracker API',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      campaigns: '/api/campaigns',
+      analytics: '/api/analytics',
+      conversions: '/api/conversions'
+    }
+  });
 });
+
+// API routes
+app.use('/api', routes);
+
+// Error handling middleware (must be last)
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
@@ -56,9 +86,12 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start server only if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
+}
 
 export default app;

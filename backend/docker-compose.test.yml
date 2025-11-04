@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  test-db:
+    image: postgres:15-alpine
+    container_name: campaign-tracker-test-db
+    environment:
+      POSTGRES_DB: campaign_tracker_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5434:5432"  # Different port to avoid conflicts with dev DB
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
+      - ../database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d campaign_tracker_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data  # Use tmpfs for faster test database
+
+  test-redis:
+    image: redis:7-alpine
+    container_name: campaign-tracker-test-redis
+    ports:
+      - "6381:6379"  # Different port to avoid conflicts with dev Redis
+    command: redis-server --appendonly yes
+    tmpfs:
+      - /data  # Use tmpfs for faster test cache
+
+volumes:
+  test_db_data:

@@ -16,57 +16,65 @@
   - Create database seed data for development and testing
   - _Requirements: 1.2, 2.3, 6.2, 7.1_
 
-- [ ] 3. Build authentication and basic API structure
-  - Implement JWT-based authentication system
-  - Create Express middleware for authentication, validation, and error handling
+- [x] 3. Build authentication and basic API structure with testing framework
+  - Set up Jest + Supertest testing framework with Docker test database
+  - Implement JWT-based authentication system with comprehensive unit tests
+  - Create Express middleware for authentication, validation, and error handling with integration tests
   - Set up API routing structure for campaigns, links, and analytics endpoints
-  - Implement request validation using Joi or similar library
+  - Implement request validation using Joi with validation tests
+  - Create test fixtures and helper utilities for database testing
   - _Requirements: 1.1, 1.2, 5.1, 5.4_
 
-- [ ] 4. Create campaign management API endpoints
-  - Implement CRUD operations for campaigns (create, read, update, delete)
-  - Add campaign validation logic for name uniqueness and format requirements
-  - Create API endpoints for listing campaigns with search and filtering
-  - Implement campaign deletion with confirmation and data preservation
+- [ ] 4. Create campaign management API endpoints with comprehensive tests
+  - Implement CRUD operations for campaigns with unit and integration tests
+  - Add campaign validation logic with edge case testing for name uniqueness and format requirements
+  - Create API endpoints for listing campaigns with search and filtering, including performance tests
+  - Implement campaign deletion with confirmation and data preservation, with data integrity tests
+  - Write test cases for error scenarios, validation failures, and concurrent operations
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.1, 3.4, 5.1, 5.2, 5.3, 5.4_
 
-- [ ] 5. Implement YouTube integration service
-  - Set up YouTube Data API client with authentication and rate limiting
-  - Create service to validate YouTube URLs and extract video IDs
-  - Implement video metadata fetching (title, thumbnail, view count)
-  - Build daily cron job for updating video view counts
-  - Add error handling for YouTube API failures and quota limits
+- [ ] 5. Implement YouTube integration service with mocked testing
+  - Set up YouTube Data API client with authentication and rate limiting, including mock API tests
+  - Create service to validate YouTube URLs and extract video IDs with comprehensive URL validation tests
+  - Implement video metadata fetching with mocked YouTube API responses for reliable testing
+  - Build daily cron job for updating video view counts with scheduled job testing
+  - Add error handling for YouTube API failures and quota limits with failure scenario tests
+  - Create YouTube API mock service for integration testing without API quota usage
   - _Requirements: 2.2, 8.1, 8.2, 8.5_
 
-- [ ] 6. Build URL shortening and click tracking system
-  - Create URL shortener service with unique short code generation
-  - Implement click tracking with visitor identification and attribution
-  - Build redirect endpoint that records clicks and forwards to landing pages
-  - Add tracking parameter injection for conversion attribution
-  - Create click event storage with IP, user agent, and referrer data
+- [ ] 6. Build URL shortening and click tracking system with performance tests
+  - Create URL shortener service with unique short code generation and collision testing
+  - Implement click tracking with visitor identification and attribution, including concurrent click tests
+  - Build redirect endpoint that records clicks and forwards to landing pages with performance benchmarks
+  - Add tracking parameter injection for conversion attribution with parameter validation tests
+  - Create click event storage with comprehensive data validation and storage integrity tests
+  - Test high-volume click scenarios and database performance under load
   - _Requirements: 2.3, 2.4, 2.5, 6.1, 6.2, 6.4, 6.5_
 
-- [ ] 7. Develop campaign link management API
-  - Create API endpoints for adding campaign links with YouTube integration
-  - Implement campaign link validation and custom alias handling
-  - Build campaign link editing and deletion functionality
-  - Add YouTube video metadata display in campaign link responses
+- [ ] 7. Develop campaign link management API with integration tests
+  - Create API endpoints for adding campaign links with YouTube integration and end-to-end workflow tests
+  - Implement campaign link validation and custom alias handling with edge case testing
+  - Build campaign link editing and deletion functionality with data consistency tests
+  - Add YouTube video metadata display with mocked API integration tests
+  - Test campaign link relationships and foreign key constraints
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 5.3, 5.5_
 
-- [ ] 8. Implement conversion tracking system
-  - Create conversion event recording API with revenue attribution
-  - Build tracking script for embedding in landing pages
-  - Implement conversion attribution logic linking events to original clicks
-  - Add support for multiple conversion types (newsletter, purchase, course)
-  - Create 30-day attribution window with automatic cleanup
+- [ ] 8. Implement conversion tracking system with attribution tests
+  - Create conversion event recording API with revenue attribution and calculation accuracy tests
+  - Build tracking script for embedding in landing pages with cross-domain testing
+  - Implement conversion attribution logic with complex attribution scenario tests
+  - Add support for multiple conversion types with type-specific validation tests
+  - Create 30-day attribution window with time-based cleanup testing and data retention verification
+  - Test attribution accuracy across different time windows and user journeys
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 9. Build analytics engine and API endpoints
-  - Implement analytics aggregation queries for campaigns and links
-  - Create CTR calculation logic for YouTube video performance
-  - Build conversion funnel analysis with step-by-step rates
-  - Add revenue attribution calculations and reporting
-  - Implement date range filtering and real-time data updates
+- [ ] 9. Build analytics engine and API endpoints with calculation accuracy tests
+  - Implement analytics aggregation queries with performance benchmarks and accuracy validation
+  - Create CTR calculation logic with mathematical precision tests and edge case handling
+  - Build conversion funnel analysis with complex funnel scenario testing
+  - Add revenue attribution calculations with financial accuracy tests and rounding validation
+  - Implement date range filtering with timezone and boundary condition tests
+  - Test analytics performance with large datasets and concurrent query scenarios
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 8.3, 8.4_
 
 - [ ] 10. Set up responsive design system and mobile-first architecture
@@ -110,14 +118,13 @@
   - Implement code splitting and bundle optimization for mobile networks
   - _Requirements: 4.4, 8.2, 9.5_
 
-- [ ]* 15. Create comprehensive testing suite with responsive design validation
-  - Write unit tests for all backend services and API endpoints
-  - Create integration tests for YouTube API and database operations
+- [ ]* 15. Create frontend testing suite with responsive design validation
   - Build responsive component tests using React Testing Library with viewport testing
   - Implement cross-device end-to-end tests for mobile, tablet, and desktop workflows
   - Add performance tests for mobile networks and touch interaction validation
   - Test responsive breakpoints and touch target accessibility compliance
-  - _Requirements: All requirements validation including 9.1, 9.2, 9.3, 9.4, 9.5_
+  - Create visual regression tests for responsive layouts
+  - _Requirements: Frontend validation including 9.1, 9.2, 9.3, 9.4, 9.5_
 
 - [ ] 16. Set up monitoring and deployment configuration
   - Configure application logging and error tracking
