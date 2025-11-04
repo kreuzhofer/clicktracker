@@ -26,9 +26,9 @@ describe('Campaign API Integration Tests', () => {
         .expect(201);
 
       TestHelpers.expectValidCampaign(response.body);
-      expect(response.body.name).toBe(campaignData.name);
-      expect(response.body.description).toBe(campaignData.description);
-      expect(response.body.tags).toEqual(campaignData.tags);
+      expect(response.body.data.name).toBe(campaignData.name);
+      expect(response.body.data.description).toBe(campaignData.description);
+      expect(response.body.data.tags).toEqual(campaignData.tags);
     });
 
     it('should create campaign with minimal data', async () => {
@@ -41,9 +41,9 @@ describe('Campaign API Integration Tests', () => {
         .expect(201);
 
       TestHelpers.expectValidCampaign(response.body);
-      expect(response.body.name).toBe(campaignData.name);
-      expect(response.body.description).toBeNull();
-      expect(response.body.tags).toBeNull();
+      expect(response.body.data.name).toBe(campaignData.name);
+      expect(response.body.data.description).toBeNull();
+      expect(response.body.data.tags).toBeNull();
     });
 
     it('should reject campaign with duplicate name', async () => {
@@ -63,8 +63,7 @@ describe('Campaign API Integration Tests', () => {
         .send(campaignData)
         .expect(409);
 
-      expect(response.body.error).toBe('Campaign with this name already exists');
-      expect(response.body.code).toBe('DUPLICATE_CAMPAIGN_NAME');
+      TestHelpers.expectConflictError(response, 'Campaign with this name already exists');
     });
 
     it('should validate required fields', async () => {
@@ -74,9 +73,7 @@ describe('Campaign API Integration Tests', () => {
         .send({})
         .expect(400);
 
-      expect(response.body.error).toBe('Validation failed');
-      expect(response.body.details).toBeDefined();
-      expect(response.body.details.some((detail: any) => detail.field === 'name')).toBe(true);
+      TestHelpers.expectValidationError(response, 'name');
     });
 
     it('should validate campaign name format', async () => {
@@ -135,11 +132,11 @@ describe('Campaign API Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('campaigns');
-      expect(response.body).toHaveProperty('pagination');
-      expect(Array.isArray(response.body.campaigns)).toBe(true);
-      expect(response.body.campaigns.length).toBe(2);
-      response.body.campaigns.forEach(TestHelpers.expectValidCampaign);
+      TestHelpers.expectValidCampaignList(response.body);
+      expect(response.body.data.length).toBe(2);
+      response.body.data.forEach((campaign: any) => {
+        TestHelpers.expectValidCampaign({ success: true, data: campaign });
+      });
     });
 
     it('should support search functionality', async () => {
@@ -151,8 +148,8 @@ describe('Campaign API Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body.campaigns.length).toBe(1);
-      expect(response.body.campaigns[0].name).toContain('Summer');
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.data[0].name).toContain('Summer');
     });
 
     it('should support pagination parameters', async () => {
@@ -166,9 +163,9 @@ describe('Campaign API Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body.campaigns.length).toBe(2);
-      expect(response.body.pagination.limit).toBe(2);
-      expect(response.body.pagination.offset).toBe(1);
+      expect(response.body.data.length).toBe(2);
+      expect(response.body.meta.pagination.limit).toBe(2);
+      expect(response.body.meta.pagination.offset).toBe(1);
     });
 
     it('should validate pagination parameters', async () => {
@@ -200,8 +197,8 @@ describe('Campaign API Integration Tests', () => {
         .expect(200);
 
       TestHelpers.expectValidCampaign(response.body);
-      expect(response.body.id).toBe(campaign.id);
-      expect(response.body.name).toBe(campaign.name);
+      expect(response.body.data.id).toBe(campaign.id);
+      expect(response.body.data.name).toBe(campaign.name);
     });
 
     it('should return 404 for non-existent campaign', async () => {
@@ -210,8 +207,7 @@ describe('Campaign API Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
-      expect(response.body.error).toBe('Campaign not found');
-      expect(response.body.code).toBe('CAMPAIGN_NOT_FOUND');
+      TestHelpers.expectNotFoundError(response, 'Campaign');
     });
 
     it('should validate UUID format', async () => {
@@ -244,10 +240,10 @@ describe('Campaign API Integration Tests', () => {
         .expect(200);
 
       TestHelpers.expectValidCampaign(response.body);
-      expect(response.body.name).toBe(updateData.name);
-      expect(response.body.description).toBe(updateData.description);
-      expect(response.body.tags).toEqual(updateData.tags);
-      expect(new Date(response.body.updated_at).getTime()).toBeGreaterThan(
+      expect(response.body.data.name).toBe(updateData.name);
+      expect(response.body.data.description).toBe(updateData.description);
+      expect(response.body.data.tags).toEqual(updateData.tags);
+      expect(new Date(response.body.data.updated_at).getTime()).toBeGreaterThan(
         new Date(campaign.updated_at).getTime()
       );
     });
@@ -264,8 +260,8 @@ describe('Campaign API Integration Tests', () => {
         .send({ description: 'Updated description only' })
         .expect(200);
 
-      expect(response.body.name).toBe('Original Campaign'); // Unchanged
-      expect(response.body.description).toBe('Updated description only'); // Changed
+      expect(response.body.data.name).toBe('Original Campaign'); // Unchanged
+      expect(response.body.data.description).toBe('Updated description only'); // Changed
     });
 
     it('should reject duplicate names', async () => {
@@ -278,7 +274,7 @@ describe('Campaign API Integration Tests', () => {
         .send({ name: 'Campaign 1' })
         .expect(409);
 
-      expect(response.body.error).toBe('Campaign with this name already exists');
+      TestHelpers.expectConflictError(response, 'Campaign with this name already exists');
     });
 
     it('should return 404 for non-existent campaign', async () => {
@@ -288,7 +284,7 @@ describe('Campaign API Integration Tests', () => {
         .send({ name: 'Updated Campaign' })
         .expect(404);
 
-      expect(response.body.error).toBe('Campaign not found');
+      TestHelpers.expectNotFoundError(response, 'Campaign');
     });
 
     it('should validate update data', async () => {
@@ -331,7 +327,7 @@ describe('Campaign API Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
-      expect(response.body.error).toBe('Campaign not found');
+      TestHelpers.expectNotFoundError(response, 'Campaign');
     });
 
     it('should validate UUID format', async () => {
@@ -438,8 +434,7 @@ describe('Campaign API Integration Tests', () => {
           .set('Authorization', `Bearer ${authToken}`)
           .expect(200);
         
-        expect(response.body).toHaveProperty('campaigns');
-        expect(response.body).toHaveProperty('pagination');
+        TestHelpers.expectValidCampaignList(response.body);
       });
 
       // Should complete within reasonable time (relaxed for CI environments)
@@ -463,8 +458,8 @@ describe('Campaign API Integration Tests', () => {
           .set('Authorization', `Bearer ${authToken}`)
           .expect(200);
         
-        expect(response.body).toHaveProperty('campaigns');
-        expect(response.body.campaigns.length).toBeGreaterThan(0);
+        TestHelpers.expectValidCampaignList(response.body);
+        expect(response.body.data.length).toBeGreaterThan(0);
       });
 
       // Should complete within reasonable time (relaxed for CI environments)

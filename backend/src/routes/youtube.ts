@@ -107,7 +107,13 @@ router.get('/metadata/:videoId',
         }
         
         if (error.message.includes('quota exceeded')) {
-          return sendError(res, CommonErrors.RATE_LIMITED('YouTube API quota has been exceeded. Please try again later.'));
+          const retryAfter = (error as any).retryAfter || 3600; // Default to 1 hour if not provided
+          return sendError(res, {
+            statusCode: 429,
+            error: 'RATE_LIMITED',
+            message: 'YouTube API quota has been exceeded. Please try again later.',
+            details: { retryAfter }
+          });
         }
       }
       

@@ -17,12 +17,13 @@ describe('Authentication API Integration Tests', () => {
         .send(validUserData)
         .expect(201);
 
-      expect(response.body).toHaveProperty('token');
-      expect(response.body).toHaveProperty('user');
-      expect(response.body.user.email).toBe(validUserData.email);
-      expect(response.body.user.first_name).toBe(validUserData.first_name);
-      expect(response.body.user.last_name).toBe(validUserData.last_name);
-      expect(response.body.user).not.toHaveProperty('password_hash');
+      TestHelpers.expectSuccessResponse(response, 201);
+      expect(response.body.data).toHaveProperty('token');
+      expect(response.body.data).toHaveProperty('user');
+      expect(response.body.data.user.email).toBe(validUserData.email);
+      expect(response.body.data.user.first_name).toBe(validUserData.first_name);
+      expect(response.body.data.user.last_name).toBe(validUserData.last_name);
+      expect(response.body.data.user).not.toHaveProperty('password_hash');
     });
 
     it('should reject duplicate email registration', async () => {
@@ -36,9 +37,9 @@ describe('Authentication API Integration Tests', () => {
       const response = await request(app)
         .post('/api/auth/register')
         .send(validUserData)
-        .expect(500); // Will be 500 due to database error, could be improved to 409
+        .expect(409); // Now properly returns 409 for conflicts
 
-      expect(response.body).toHaveProperty('error');
+      TestHelpers.expectErrorResponse(response);
     });
 
     it('should validate required fields', async () => {
@@ -47,9 +48,7 @@ describe('Authentication API Integration Tests', () => {
         .send({})
         .expect(400);
 
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toBe('Validation failed');
-      expect(response.body).toHaveProperty('details');
+      TestHelpers.expectValidationError(response);
       expect(Array.isArray(response.body.details)).toBe(true);
     });
 
@@ -62,7 +61,7 @@ describe('Authentication API Integration Tests', () => {
         })
         .expect(400);
 
-      expect(response.body.error).toBe('Validation failed');
+      TestHelpers.expectValidationError(response, 'email');
       expect(response.body.details.some((d: any) => d.field === 'email')).toBe(true);
     });
 
@@ -75,7 +74,7 @@ describe('Authentication API Integration Tests', () => {
         })
         .expect(400);
 
-      expect(response.body.error).toBe('Validation failed');
+      TestHelpers.expectValidationError(response, 'password');
       expect(response.body.details.some((d: any) => d.field === 'password')).toBe(true);
     });
 
@@ -89,7 +88,7 @@ describe('Authentication API Integration Tests', () => {
         })
         .expect(400);
 
-      expect(response.body.error).toBe('Validation failed');
+      TestHelpers.expectValidationError(response, 'first_name');
       expect(response.body.details.some((d: any) => d.field === 'first_name')).toBe(true);
       expect(response.body.details.some((d: any) => d.field === 'last_name')).toBe(true);
     });
@@ -118,10 +117,11 @@ describe('Authentication API Integration Tests', () => {
         })
         .expect(200);
 
-      expect(response.body).toHaveProperty('token');
-      expect(response.body).toHaveProperty('user');
-      expect(response.body.user.email).toBe(userData.email);
-      expect(response.body.user).not.toHaveProperty('password_hash');
+      TestHelpers.expectSuccessResponse(response);
+      expect(response.body.data).toHaveProperty('token');
+      expect(response.body.data).toHaveProperty('user');
+      expect(response.body.data.user.email).toBe(userData.email);
+      expect(response.body.data.user).not.toHaveProperty('password_hash');
     });
 
     it('should reject invalid email', async () => {
@@ -131,9 +131,9 @@ describe('Authentication API Integration Tests', () => {
           email: 'nonexistent@example.com',
           password: userData.password
         })
-        .expect(500); // Will be 500 due to service error, could be improved to 401
+        .expect(401); // Now properly returns 401 for auth errors
 
-      expect(response.body).toHaveProperty('error');
+      TestHelpers.expectErrorResponse(response);
     });
 
     it('should reject invalid password', async () => {
@@ -143,9 +143,9 @@ describe('Authentication API Integration Tests', () => {
           email: userData.email,
           password: 'wrongpassword'
         })
-        .expect(500); // Will be 500 due to service error, could be improved to 401
+        .expect(401); // Now properly returns 401 for auth errors
 
-      expect(response.body).toHaveProperty('error');
+      TestHelpers.expectErrorResponse(response);
     });
 
     it('should validate required fields', async () => {
@@ -154,7 +154,7 @@ describe('Authentication API Integration Tests', () => {
         .send({})
         .expect(400);
 
-      expect(response.body.error).toBe('Validation failed');
+      TestHelpers.expectValidationError(response, 'email');
       expect(response.body.details.some((d: any) => d.field === 'email')).toBe(true);
       expect(response.body.details.some((d: any) => d.field === 'password')).toBe(true);
     });
@@ -168,7 +168,7 @@ describe('Authentication API Integration Tests', () => {
         })
         .expect(400);
 
-      expect(response.body.error).toBe('Validation failed');
+      TestHelpers.expectValidationError(response, 'email');
       expect(response.body.details.some((d: any) => d.field === 'email')).toBe(true);
     });
   });
@@ -186,7 +186,7 @@ describe('Authentication API Integration Tests', () => {
           last_name: 'User'
         });
       
-      validToken = registerResponse.body.token;
+      validToken = registerResponse.body.data.token;
     });
 
     it('should refresh valid token', async () => {
@@ -195,18 +195,19 @@ describe('Authentication API Integration Tests', () => {
         .send({ token: validToken })
         .expect(200);
 
-      expect(response.body).toHaveProperty('token');
-      expect(typeof response.body.token).toBe('string');
-      expect(response.body.token).not.toBe(validToken);
+      TestHelpers.expectSuccessResponse(response);
+      expect(response.body.data).toHaveProperty('token');
+      expect(typeof response.body.data.token).toBe('string');
+      expect(response.body.data.token).not.toBe(validToken);
     });
 
     it('should reject invalid token', async () => {
       const response = await request(app)
         .post('/api/auth/refresh')
         .send({ token: 'invalid-token' })
-        .expect(500); // Will be 500 due to service error, could be improved to 401
+        .expect(401); // Now properly returns 401 for auth errors
 
-      expect(response.body).toHaveProperty('error');
+      TestHelpers.expectErrorResponse(response);
     });
 
     it('should validate required token field', async () => {
@@ -215,7 +216,7 @@ describe('Authentication API Integration Tests', () => {
         .send({})
         .expect(400);
 
-      expect(response.body.error).toBe('Validation failed');
+      TestHelpers.expectValidationError(response, 'token');
       expect(response.body.details.some((d: any) => d.field === 'token')).toBe(true);
     });
   });
@@ -236,7 +237,7 @@ describe('Authentication API Integration Tests', () => {
         .post('/api/auth/register')
         .send(userData);
       
-      authToken = response.body.token;
+      authToken = response.body.data.token;
     });
 
     it('should return user profile with valid token', async () => {
@@ -245,11 +246,12 @@ describe('Authentication API Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('user');
-      expect(response.body.user.email).toBe(userData.email);
-      expect(response.body.user.first_name).toBe(userData.first_name);
-      expect(response.body.user.last_name).toBe(userData.last_name);
-      expect(response.body.user).not.toHaveProperty('password_hash');
+      TestHelpers.expectSuccessResponse(response);
+      expect(response.body.data).toHaveProperty('user');
+      expect(response.body.data.user.email).toBe(userData.email);
+      expect(response.body.data.user.first_name).toBe(userData.first_name);
+      expect(response.body.data.user.last_name).toBe(userData.last_name);
+      expect(response.body.data.user).not.toHaveProperty('password_hash');
     });
 
     it('should reject request without token', async () => {
@@ -257,8 +259,7 @@ describe('Authentication API Integration Tests', () => {
         .get('/api/auth/profile')
         .expect(401);
 
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toBe('Access token required');
+      TestHelpers.expectErrorResponse(response, 'Access token required');
     });
 
     it('should reject request with invalid token', async () => {
@@ -267,8 +268,7 @@ describe('Authentication API Integration Tests', () => {
         .set('Authorization', 'Bearer invalid-token')
         .expect(401);
 
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toBe('Invalid or expired token');
+      TestHelpers.expectErrorResponse(response, 'Invalid or expired token');
     });
 
     it('should reject request with malformed authorization header', async () => {
@@ -277,7 +277,7 @@ describe('Authentication API Integration Tests', () => {
         .set('Authorization', 'InvalidFormat')
         .expect(401);
 
-      expect(response.body.error).toBe('Access token required');
+      TestHelpers.expectErrorResponse(response, 'Access token required');
     });
   });
 

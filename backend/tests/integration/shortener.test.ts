@@ -10,17 +10,13 @@ describe('URL Shortener Integration Tests', () => {
   let testCampaignLink: any;
   let testShortCode: string;
 
-  beforeAll(async () => {
-    // Create test user and get auth token with unique identifiers
-    const userEmail = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
-    const password = 'TestPassword123!';
-    await TestHelpers.createTestUser({ email: userEmail, password });
-    authToken = await TestHelpers.loginTestUser(userEmail, password);
+  beforeEach(async () => {
+    // Create test user and get auth token
+    await TestHelpers.createTestUser();
+    authToken = await TestHelpers.loginTestUser();
     
-    // Create test campaign with unique name
-    testCampaign = await TestHelpers.createTestCampaign({
-      name: `Test Campaign ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    });
+    // Create test campaign
+    testCampaign = await TestHelpers.createTestCampaign();
     
     // Create test campaign link
     testCampaignLink = await TestHelpers.createTestCampaignLink(testCampaign.id);
@@ -68,7 +64,7 @@ describe('URL Shortener Integration Tests', () => {
     });
 
     it('should create a shortened URL with custom alias', async () => {
-      const customAlias = `test-alias-${Date.now()}`;
+      const customAlias = `test${Date.now().toString().slice(-5)}`; // Max 9 chars
       const shortenRequest = {
         campaignId: testCampaign.id,
         landingPageUrl: 'https://example.com/custom',
@@ -88,7 +84,7 @@ describe('URL Shortener Integration Tests', () => {
     });
 
     it('should return 409 for duplicate custom alias', async () => {
-      const customAlias = `duplicate-alias-${Date.now()}`;
+      const customAlias = `dup${Date.now().toString().slice(-6)}`; // Max 9 chars
       
       // Create first link with custom alias
       await request(app)
@@ -114,8 +110,7 @@ describe('URL Shortener Integration Tests', () => {
         })
         .expect(409);
 
-      expect(response.body.error).toBe('Conflict');
-      expect(response.body.message).toBe('Custom alias is already taken');
+      TestHelpers.expectConflictError(response, 'Custom alias is already taken');
     });
 
     it('should validate request data', async () => {
@@ -207,7 +202,7 @@ describe('URL Shortener Integration Tests', () => {
     });
 
     it('should handle custom alias redirects', async () => {
-      const customAlias = `redirect-alias-${Date.now()}`;
+      const customAlias = `red${Date.now().toString().slice(-6)}`; // Max 9 chars
       
       // Create link with custom alias
       await request(app)
@@ -247,10 +242,9 @@ describe('URL Shortener Integration Tests', () => {
         .post('/api/shortener/validate-url')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ url: 'not-a-url' })
-        .expect(200);
+        .expect(400);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.isValid).toBe(false);
+      TestHelpers.expectValidationError(response, 'url');
     });
   });
 
@@ -282,7 +276,7 @@ describe('URL Shortener Integration Tests', () => {
         .send({ url: 'https://example.com' })
         .expect(400);
 
-      expect(response.body.error).toBe('Bad Request');
+      expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Unable to extract YouTube video ID');
     });
   });
@@ -321,7 +315,7 @@ describe('URL Shortener Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 
-      expect(response.body.error).toBe('Bad Request');
+      expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid campaign link ID format');
     });
   });
@@ -397,7 +391,7 @@ describe('URL Shortener Integration Tests', () => {
         .send({ clicks })
         .expect(400);
 
-      expect(response.body.error).toBe('Bad Request');
+      expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Maximum 1000 clicks allowed per batch');
     });
 
@@ -408,7 +402,7 @@ describe('URL Shortener Integration Tests', () => {
         .send({ clicks: [] })
         .expect(400);
 
-      expect(response.body.error).toBe('Bad Request');
+      expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Clicks array is required and must not be empty');
     });
   });
@@ -435,7 +429,7 @@ describe('URL Shortener Integration Tests', () => {
           .set('Authorization', `Bearer ${authToken}`)
           .expect(400);
 
-        expect(response.body.error).toBe('Bad Request');
+        expect(response.body.success).toBe(false);
         expect(response.body.message).toBe('Days must be a number between 1 and 365');
       }
     });

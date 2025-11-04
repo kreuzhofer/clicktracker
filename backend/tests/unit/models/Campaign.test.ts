@@ -18,7 +18,7 @@ describe('Campaign Model Unit Tests', () => {
 
       const campaign = await campaignModel.create(campaignData);
 
-      TestHelpers.expectValidCampaign(campaign);
+      TestHelpers.expectValidCampaignObject(campaign);
       expect(campaign.name).toBe(campaignData.name);
       expect(campaign.description).toBe(campaignData.description);
       expect(campaign.tags).toEqual(campaignData.tags);
@@ -30,7 +30,7 @@ describe('Campaign Model Unit Tests', () => {
       const campaignData = { name: 'Minimal Campaign' };
       const campaign = await campaignModel.create(campaignData);
 
-      TestHelpers.expectValidCampaign(campaign);
+      TestHelpers.expectValidCampaignObject(campaign);
       expect(campaign.name).toBe(campaignData.name);
       expect(campaign.description).toBeNull();
       expect(campaign.tags).toBeNull();
@@ -40,7 +40,7 @@ describe('Campaign Model Unit Tests', () => {
       const campaignData = { name: 'Empty Description Campaign', description: '' };
       const campaign = await campaignModel.create(campaignData);
 
-      TestHelpers.expectValidCampaign(campaign);
+      TestHelpers.expectValidCampaignObject(campaign);
       expect(campaign.description).toBeNull();
     });
 
@@ -48,7 +48,7 @@ describe('Campaign Model Unit Tests', () => {
       const campaignData = { name: 'Empty Tags Campaign', tags: [] };
       const campaign = await campaignModel.create(campaignData);
 
-      TestHelpers.expectValidCampaign(campaign);
+      TestHelpers.expectValidCampaignObject(campaign);
       expect(campaign.tags).toEqual([]);
     });
 
@@ -65,7 +65,7 @@ describe('Campaign Model Unit Tests', () => {
       const campaignData = { name: 'Campaign-with_special 123' };
       const campaign = await campaignModel.create(campaignData);
 
-      TestHelpers.expectValidCampaign(campaign);
+      TestHelpers.expectValidCampaignObject(campaign);
       expect(campaign.name).toBe(campaignData.name);
     });
   });

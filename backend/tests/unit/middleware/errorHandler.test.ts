@@ -196,10 +196,14 @@ describe('Error Handler Middleware Unit Tests', () => {
 
       expect(mockRes.status).toHaveBeenCalledWith(404);
       expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Endpoint not found',
-        path: '/test',
-        method: 'GET',
-        timestamp: expect.any(String)
+        success: false,
+        error: 'ENDPOINT_NOT_FOUND',
+        message: 'Endpoint not found',
+        details: {
+          path: '/test',
+          method: 'GET',
+          timestamp: expect.any(String)
+        }
       });
     });
   });

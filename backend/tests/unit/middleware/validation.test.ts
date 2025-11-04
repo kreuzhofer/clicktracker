@@ -92,7 +92,9 @@ describe('Validation Middleware Unit Tests', () => {
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Validation failed',
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Validation failed',
         details: expect.arrayContaining([
           expect.objectContaining({
             field: 'email',
@@ -115,7 +117,9 @@ describe('Validation Middleware Unit Tests', () => {
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Validation failed',
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Validation failed',
         details: expect.arrayContaining([
           expect.objectContaining({
             field: 'email',
@@ -142,7 +146,9 @@ describe('Validation Middleware Unit Tests', () => {
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Validation failed',
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Validation failed',
         details: expect.arrayContaining([
           expect.objectContaining({
             field: 'age',
@@ -219,7 +225,9 @@ describe('Validation Middleware Unit Tests', () => {
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Query validation failed',
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Query validation failed',
         details: expect.arrayContaining([
           expect.objectContaining({
             field: 'limit',
@@ -264,7 +272,9 @@ describe('Validation Middleware Unit Tests', () => {
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Parameter validation failed',
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Parameter validation failed',
         details: expect.arrayContaining([
           expect.objectContaining({
             field: 'id',
@@ -283,7 +293,9 @@ describe('Validation Middleware Unit Tests', () => {
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Parameter validation failed',
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Parameter validation failed',
         details: expect.arrayContaining([
           expect.objectContaining({
             field: 'id',
@@ -356,7 +368,9 @@ describe('Validation Middleware Unit Tests', () => {
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Validation failed',
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Validation failed',
         details: expect.arrayContaining([
           expect.objectContaining({
             field: 'tags',

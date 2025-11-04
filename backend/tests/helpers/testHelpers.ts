@@ -31,7 +31,7 @@ export class TestHelpers {
       .post('/api/auth/login')
       .send({ email, password });
 
-    return response.body.token;
+    return response.body.data.token;
   }
 
   // Campaign helpers
@@ -92,13 +92,34 @@ export class TestHelpers {
   }
 
   // Assertion helpers
-  static expectValidCampaign(campaign: any) {
+  static expectValidCampaign(response: any) {
+    expect(response).toHaveProperty('success', true);
+    expect(response).toHaveProperty('data');
+    const campaign = response.data;
     expect(campaign).toHaveProperty('id');
     expect(campaign).toHaveProperty('name');
     expect(campaign).toHaveProperty('created_at');
     expect(campaign).toHaveProperty('updated_at');
     expect(typeof campaign.id).toBe('string');
     expect(typeof campaign.name).toBe('string');
+  }
+
+  // For validating campaign objects directly (not wrapped in response format)
+  static expectValidCampaignObject(campaign: any) {
+    expect(campaign).toHaveProperty('id');
+    expect(campaign).toHaveProperty('name');
+    expect(campaign).toHaveProperty('created_at');
+    expect(campaign).toHaveProperty('updated_at');
+    expect(typeof campaign.id).toBe('string');
+    expect(typeof campaign.name).toBe('string');
+  }
+
+  static expectValidCampaignList(response: any) {
+    expect(response).toHaveProperty('success', true);
+    expect(response).toHaveProperty('data');
+    expect(Array.isArray(response.data)).toBe(true);
+    expect(response).toHaveProperty('meta');
+    expect(response.meta).toHaveProperty('pagination');
   }
 
   static expectValidCampaignLink(link: any) {
@@ -109,6 +130,93 @@ export class TestHelpers {
     expect(link).toHaveProperty('youtube_video_id');
     expect(typeof link.short_code).toBe('string');
     expect(link.short_code.length).toBeGreaterThan(0);
+  }
+
+  // Error expectation helpers
+  static expectValidationError(response: any, field?: string) {
+    expect(response.body.success).toBe(false);
+    expect(response.body.error).toBe('VALIDATION_ERROR');
+    expect(response.body.message).toBe('Validation failed');
+    expect(response.body.details).toBeDefined();
+    if (field) {
+      expect(response.body.details.some((d: any) => d.field === field)).toBe(true);
+    }
+  }
+
+  static expectNotFoundError(response: any, resource: string) {
+    expect(response.body.success).toBe(false);
+    expect(response.body.error).toBe('NOT_FOUND');
+    expect(response.body.message).toContain(resource);
+  }
+
+  static expectConflictError(response: any, message?: string) {
+    expect(response.body.success).toBe(false);
+    expect(response.body.error).toBe('CONFLICT');
+    if (message) {
+      expect(response.body.message).toContain(message);
+    }
+  }
+
+  static expectUnauthorizedError(response: any, message?: string) {
+    expect(response.body.success).toBe(false);
+    expect(response.body.error).toBe('UNAUTHORIZED');
+    if (message) {
+      expect(response.body.message).toBe(message);
+    }
+  }
+
+  static expectInternalError(response: any, message?: string) {
+    expect(response.body.success).toBe(false);
+    expect(response.body.error).toBe('INTERNAL_ERROR');
+    if (message) {
+      expect(response.body.message).toBe(message);
+    }
+  }
+
+  static expectRateLimitError(response: any, retryAfter?: number) {
+    expect(response.body.success).toBe(false);
+    expect(response.body.error).toBe('RATE_LIMITED');
+    if (retryAfter) {
+      expect(response.body.details.retryAfter).toBe(retryAfter);
+    }
+  }
+
+  // Generic error response helper
+  static expectErrorResponse(response: any, message?: string) {
+    expect(response.body.success).toBe(false);
+    expect(response.body).toHaveProperty('error');
+    if (message) {
+      expect(response.body.message).toBe(message);
+    }
+  }
+
+  static expectSuccessResponse(response: any, statusCode: number = 200) {
+    expect(response.status).toBe(statusCode);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toBeDefined();
+  }
+
+  // URL Shortener specific helpers
+  static expectValidShortenResponse(response: any) {
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toHaveProperty('shortCode');
+    expect(response.body.data).toHaveProperty('landingPageUrl');
+    expect(response.body.data).toHaveProperty('campaignId');
+    expect(typeof response.body.data.shortCode).toBe('string');
+    expect(response.body.data.shortCode.length).toBeGreaterThan(0);
+  }
+
+  static expectValidUrlValidationResponse(response: any, isValid: boolean) {
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toHaveProperty('isValid', isValid);
+    expect(response.body.data).toHaveProperty('url');
+  }
+
+  static expectValidStatsResponse(response: any) {
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toHaveProperty('campaignLinkId');
+    expect(response.body.data).toHaveProperty('totalClicks');
+    expect(response.body.data).toHaveProperty('uniqueClicks');
   }
 
   static expectValidClickEvent(click: any) {

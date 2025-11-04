@@ -91,7 +91,11 @@ describe('Authentication Middleware Unit Tests', () => {
       );
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Access token required' });
+      expect(mockRes.json).toHaveBeenCalledWith({ 
+        success: false,
+        error: 'UNAUTHORIZED',
+        message: 'Access token required'
+      });
       expect(mockNext).not.toHaveBeenCalled();
     });
 
@@ -107,7 +111,11 @@ describe('Authentication Middleware Unit Tests', () => {
       );
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Access token required' });
+      expect(mockRes.json).toHaveBeenCalledWith({ 
+        success: false,
+        error: 'UNAUTHORIZED',
+        message: 'Access token required'
+      });
       expect(mockNext).not.toHaveBeenCalled();
     });
 
@@ -127,7 +135,11 @@ describe('Authentication Middleware Unit Tests', () => {
       );
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Invalid or expired token' });
+      expect(mockRes.json).toHaveBeenCalledWith({ 
+        success: false,
+        error: 'UNAUTHORIZED',
+        message: 'Invalid or expired token'
+      });
       expect(mockNext).not.toHaveBeenCalled();
     });
 
@@ -150,7 +162,11 @@ describe('Authentication Middleware Unit Tests', () => {
       );
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'User not found' });
+      expect(mockRes.json).toHaveBeenCalledWith({ 
+        success: false,
+        error: 'UNAUTHORIZED',
+        message: 'User not found'
+      });
       expect(mockNext).not.toHaveBeenCalled();
     });
 
@@ -173,7 +189,11 @@ describe('Authentication Middleware Unit Tests', () => {
       );
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Invalid or expired token' });
+      expect(mockRes.json).toHaveBeenCalledWith({ 
+        success: false,
+        error: 'UNAUTHORIZED',
+        message: 'Invalid or expired token'
+      });
       expect(mockNext).not.toHaveBeenCalled();
     });
   });
