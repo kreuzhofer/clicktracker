@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { authenticateToken, optionalAuth } from '../../../src/middleware/auth';
 import { AuthenticatedRequest } from '../../../src/types';
+import { AuthService } from '../../../src/services/AuthService';
 
 // Mock the entire auth middleware module
 jest.mock('../../../src/services/AuthService', () => {

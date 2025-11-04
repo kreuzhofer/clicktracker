@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import Database from './config/database';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { getYouTubeCronService } from './services/YouTubeCronService';
 
 // Load environment variables
 dotenv.config();
@@ -14,6 +15,14 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize database connection
 const db = Database.getInstance();
+
+// Initialize YouTube cron service (only if API key is available)
+let youtubeCronService: any = null;
+try {
+  youtubeCronService = getYouTubeCronService();
+} catch (error) {
+  console.warn('YouTube cron service not initialized: YOUTUBE_API_KEY not configured');
+}
 
 // Middleware
 app.use(helmet());
@@ -76,12 +85,18 @@ app.use(errorHandler);
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down gracefully');
+  if (youtubeCronService) {
+    youtubeCronService.stop();
+  }
   await db.close();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   console.log('SIGINT received, shutting down gracefully');
+  if (youtubeCronService) {
+    youtubeCronService.stop();
+  }
   await db.close();
   process.exit(0);
 });
@@ -91,6 +106,11 @@ if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    
+    // Start YouTube cron service if available
+    if (youtubeCronService) {
+      youtubeCronService.start();
+    }
   });
 }
 

@@ -104,7 +104,9 @@ npm run dev
 - `npm run dev` - Start development server with hot reload
 - `npm run build` - Build for production
 - `npm run start` - Start production server
-- `npm test` - Run tests
+- `npm test` - Run all tests (with mocks)
+- `npm run validate:youtube-api` - Validate YouTube API key setup
+- `npm run test:real-api` - Run tests against real YouTube API
 - `npm run lint` - Run ESLint
 - `npm run format` - Format code with Prettier
 
@@ -115,6 +117,23 @@ npm run dev
 - `npm test` - Run tests
 - `npm run lint` - Run ESLint
 - `npm run format` - Format code with Prettier
+
+## Testing
+
+The project includes comprehensive test coverage with both mock and real API testing:
+
+### Mock Tests (Default)
+- Fast execution without API calls
+- Reliable and deterministic
+- Run with: `npm test`
+
+### Real API Tests
+- Test against actual YouTube API
+- Validate real-world functionality
+- Consume API quota
+- Run with: `npm run test:real-api`
+
+See [Real API Testing Guide](backend/docs/REAL_API_TESTING.md) for detailed information.
 
 ## API Documentation
 
